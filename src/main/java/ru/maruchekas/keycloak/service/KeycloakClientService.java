@@ -18,6 +18,8 @@ public class KeycloakClientService {
 
     @Value("${keycloak.auth-server-url}")
     private String keyCloakUrl;
+    @Value("${keycloak.resource}")
+    private String clientId;
     @Value("${keycloak.realm}")
     private String realm;
 
@@ -40,13 +42,33 @@ public class KeycloakClientService {
                 AccessTokenResponse.class).getBody();
     }
 
+    public AccessTokenResponse refreshToken(String refreshToken) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+
+        MultiValueMap<String, String> parameters = new LinkedMultiValueMap<>();
+        parameters.add("grant_type", "refresh_token");
+        parameters.add("client_id", clientId);
+        parameters.add("refresh_token", refreshToken);
+
+        HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(parameters, headers);
+        AccessTokenResponse tokenResponse = new RestTemplate().exchange(getAuthUrl(),
+                HttpMethod.POST,
+                entity,
+                AccessTokenResponse.class).getBody();
+        System.out.println(tokenResponse.getToken());
+        System.out.println(tokenResponse.getRefreshToken());
+
+        return tokenResponse;
+    }
+
     private String getAuthUrl() {
         return UriComponentsBuilder.fromHttpUrl(keyCloakUrl)
                 .pathSegment("realms")
                 .pathSegment(realm)
                 .pathSegment("protocol")
                 .pathSegment("openid-connect")
-                .pathSegment("token")
+                .pathSegment("auth")
                 .toUriString();
     }
 }
