@@ -1,0 +1,9 @@
+server:
+  port: 8088
+keycloak:
+  auth-server-url: http://localhost:8080
+  realm: MitraSoftRealm
+  resource: mitra-client
+  public-client: true
+  bearer-only: true
+  use-resource-role-mappings: true
