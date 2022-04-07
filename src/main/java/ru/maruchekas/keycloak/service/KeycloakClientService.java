@@ -1,5 +1,6 @@
 package ru.maruchekas.keycloak.service;
 
+import lombok.RequiredArgsConstructor;
 import org.keycloak.representations.AccessTokenResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -15,8 +16,8 @@ import ru.maruchekas.keycloak.api.request.AuthRequest;
 import ru.maruchekas.keycloak.api.request.RefreshTokenRequest;
 
 @Service
+@RequiredArgsConstructor
 public class KeycloakClientService {
-
     @Value("${keycloak.auth-server-url}")
     private String keyCloakUrl;
     @Value("${keycloak.resource}")
@@ -24,6 +25,7 @@ public class KeycloakClientService {
     @Value("${keycloak.realm}")
     private String realm;
 
+    private final RestTemplate restTemplate;
 
     public AccessTokenResponse authenticate(AuthRequest request) {
         HttpHeaders headers = new HttpHeaders();
@@ -37,7 +39,7 @@ public class KeycloakClientService {
 
         HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(parameters, headers);
 
-        return new RestTemplate().exchange(getAuthUrl(),
+        return restTemplate.exchange(getAuthUrl(),
                 HttpMethod.POST,
                 entity,
                 AccessTokenResponse.class).getBody();
@@ -53,14 +55,11 @@ public class KeycloakClientService {
         parameters.add("refresh_token", request.getRefreshToken());
 
         HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(parameters, headers);
-        AccessTokenResponse tokenResponse = new RestTemplate().exchange(getAuthUrl(),
+
+        return restTemplate.exchange(getAuthUrl(),
                 HttpMethod.POST,
                 entity,
                 AccessTokenResponse.class).getBody();
-        System.out.println(tokenResponse.getToken());
-        System.out.println(tokenResponse.getRefreshToken());
-
-        return tokenResponse;
     }
 
     public AccessTokenResponse logout(RefreshTokenRequest request) {
@@ -73,7 +72,7 @@ public class KeycloakClientService {
 
         HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(parameters, headers);
 
-        return new RestTemplate().exchange(getLogoutUrl(),
+        return restTemplate.exchange(getLogoutUrl(),
                 HttpMethod.POST,
                 entity,
                 AccessTokenResponse.class).getBody();
@@ -85,7 +84,7 @@ public class KeycloakClientService {
                 .pathSegment(realm)
                 .pathSegment("protocol")
                 .pathSegment("openid-connect")
-                .pathSegment("auth")
+                .pathSegment("token")
                 .toUriString();
     }
 
