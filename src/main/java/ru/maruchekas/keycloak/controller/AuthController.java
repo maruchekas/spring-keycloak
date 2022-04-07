@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ru.maruchekas.keycloak.api.request.AuthRequest;
 import ru.maruchekas.keycloak.api.request.RefreshTokenRequest;
+import ru.maruchekas.keycloak.exception.AuthenticationDataException;
 import ru.maruchekas.keycloak.exception.InvalidTokenException;
 import ru.maruchekas.keycloak.service.KeycloakClientService;
 
@@ -17,7 +18,8 @@ public class AuthController {
     private final KeycloakClientService keycloakClientService;
 
     @PostMapping
-    public ResponseEntity<AccessTokenResponse> authenticate(@RequestBody AuthRequest request) {
+    public ResponseEntity<AccessTokenResponse> authenticate(@RequestBody AuthRequest request)
+            throws AuthenticationDataException {
         return ResponseEntity.ok(keycloakClientService.authenticate(request));
     }
 
