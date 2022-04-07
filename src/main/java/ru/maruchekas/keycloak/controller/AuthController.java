@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ru.maruchekas.keycloak.api.request.AuthRequest;
 import ru.maruchekas.keycloak.api.request.RefreshTokenRequest;
+import ru.maruchekas.keycloak.exception.InvalidTokenException;
 import ru.maruchekas.keycloak.service.KeycloakClientService;
 
 @RestController
@@ -21,12 +22,14 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<AccessTokenResponse> refresh(@RequestBody RefreshTokenRequest refreshToken) {
+    public ResponseEntity<AccessTokenResponse> refresh(@RequestBody RefreshTokenRequest refreshToken)
+            throws InvalidTokenException {
         return ResponseEntity.ok(keycloakClientService.refreshToken(refreshToken));
     }
 
     @PostMapping(path = "/logout")
-    public ResponseEntity<AccessTokenResponse> logout(@RequestBody RefreshTokenRequest refreshToken) {
+    public ResponseEntity<AccessTokenResponse> logout(@RequestBody RefreshTokenRequest refreshToken)
+            throws InvalidTokenException {
         return ResponseEntity.ok(keycloakClientService.logout(refreshToken));
     }
 }

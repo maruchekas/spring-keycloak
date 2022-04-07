@@ -14,6 +14,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import ru.maruchekas.keycloak.api.request.AuthRequest;
 import ru.maruchekas.keycloak.api.request.RefreshTokenRequest;
+import ru.maruchekas.keycloak.exception.InvalidTokenException;
 
 @Service
 @RequiredArgsConstructor
@@ -39,13 +40,15 @@ public class KeycloakClientService {
 
         HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(parameters, headers);
 
+        // should catch exception
         return restTemplate.exchange(getAuthUrl(),
                 HttpMethod.POST,
                 entity,
                 AccessTokenResponse.class).getBody();
     }
 
-    public AccessTokenResponse refreshToken(RefreshTokenRequest request) {
+    public AccessTokenResponse refreshToken(RefreshTokenRequest request) throws InvalidTokenException {
+        AccessTokenResponse accessTokenResponse;
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
@@ -56,13 +59,21 @@ public class KeycloakClientService {
 
         HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(parameters, headers);
 
-        return restTemplate.exchange(getAuthUrl(),
-                HttpMethod.POST,
-                entity,
-                AccessTokenResponse.class).getBody();
+
+        try {
+            accessTokenResponse = restTemplate.exchange(getAuthUrl(),
+                    HttpMethod.POST,
+                    entity,
+                    AccessTokenResponse.class).getBody();
+        } catch (Exception e){
+            throw new InvalidTokenException("invalid or expired refresh token");
+        }
+
+        return accessTokenResponse;
     }
 
-    public AccessTokenResponse logout(RefreshTokenRequest request) {
+    public AccessTokenResponse logout(RefreshTokenRequest request) throws InvalidTokenException {
+        AccessTokenResponse accessTokenResponse;
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
@@ -72,10 +83,16 @@ public class KeycloakClientService {
 
         HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(parameters, headers);
 
-        return restTemplate.exchange(getLogoutUrl(),
-                HttpMethod.POST,
-                entity,
-                AccessTokenResponse.class).getBody();
+        try {
+            accessTokenResponse = restTemplate.exchange(getLogoutUrl(),
+                    HttpMethod.POST,
+                    entity,
+                    AccessTokenResponse.class).getBody();
+        } catch (Exception e){
+            throw new InvalidTokenException("invalid or expired refresh token");
+        }
+
+        return accessTokenResponse;
     }
 
     private String getAuthUrl() {
