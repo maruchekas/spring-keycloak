@@ -14,6 +14,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import ru.maruchekas.keycloak.api.request.AuthRequest;
 import ru.maruchekas.keycloak.api.request.RefreshTokenRequest;
+import ru.maruchekas.keycloak.exception.AuthenticationDataException;
 import ru.maruchekas.keycloak.exception.InvalidTokenException;
 
 @Service
@@ -28,23 +29,30 @@ public class KeycloakClientService {
 
     private final RestTemplate restTemplate;
 
-    public AccessTokenResponse authenticate(AuthRequest request) {
+    public AccessTokenResponse authenticate(AuthRequest request) throws AuthenticationDataException {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
         MultiValueMap<String, String> parameters = new LinkedMultiValueMap<>();
-        parameters.add("username",request.getUsername());
-        parameters.add("password",request.getPassword());
+        parameters.add("username", request.getUsername());
+        parameters.add("password", request.getPassword());
         parameters.add("grant_type", "password");
         parameters.add("client_id", request.getClientId());
 
         HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(parameters, headers);
 
-        // should catch exception
-        return restTemplate.exchange(getAuthUrl(),
-                HttpMethod.POST,
-                entity,
-                AccessTokenResponse.class).getBody();
+        AccessTokenResponse accessTokenResponse;
+
+        try {
+            accessTokenResponse = restTemplate.exchange(getAuthUrl(),
+                    HttpMethod.POST,
+                    entity,
+                    AccessTokenResponse.class).getBody();
+        } catch (Exception e) {
+            throw new AuthenticationDataException();
+        }
+
+        return accessTokenResponse;
     }
 
     public AccessTokenResponse refreshToken(RefreshTokenRequest request) throws InvalidTokenException {
@@ -65,8 +73,8 @@ public class KeycloakClientService {
                     HttpMethod.POST,
                     entity,
                     AccessTokenResponse.class).getBody();
-        } catch (Exception e){
-            throw new InvalidTokenException("invalid or expired refresh token");
+        } catch (Exception e) {
+            throw new InvalidTokenException();
         }
 
         return accessTokenResponse;
@@ -88,8 +96,8 @@ public class KeycloakClientService {
                     HttpMethod.POST,
                     entity,
                     AccessTokenResponse.class).getBody();
-        } catch (Exception e){
-            throw new InvalidTokenException("invalid or expired refresh token");
+        } catch (Exception e) {
+            throw new InvalidTokenException();
         }
 
         return accessTokenResponse;
