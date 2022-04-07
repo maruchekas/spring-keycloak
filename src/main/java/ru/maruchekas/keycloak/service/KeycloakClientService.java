@@ -12,6 +12,7 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import ru.maruchekas.keycloak.api.request.AuthRequest;
+import ru.maruchekas.keycloak.api.request.RefreshTokenRequest;
 
 @Service
 public class KeycloakClientService {
@@ -42,14 +43,14 @@ public class KeycloakClientService {
                 AccessTokenResponse.class).getBody();
     }
 
-    public AccessTokenResponse refreshToken(String refreshToken) {
+    public AccessTokenResponse refreshToken(RefreshTokenRequest request) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
         MultiValueMap<String, String> parameters = new LinkedMultiValueMap<>();
         parameters.add("grant_type", "refresh_token");
         parameters.add("client_id", clientId);
-        parameters.add("refresh_token", refreshToken);
+        parameters.add("refresh_token", request.getRefreshToken());
 
         HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(parameters, headers);
         AccessTokenResponse tokenResponse = new RestTemplate().exchange(getAuthUrl(),
@@ -62,6 +63,22 @@ public class KeycloakClientService {
         return tokenResponse;
     }
 
+    public AccessTokenResponse logout(RefreshTokenRequest request) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+
+        MultiValueMap<String, String> parameters = new LinkedMultiValueMap<>();
+        parameters.add("client_id", clientId);
+        parameters.add("refresh_token", request.getRefreshToken());
+
+        HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(parameters, headers);
+
+        return new RestTemplate().exchange(getLogoutUrl(),
+                HttpMethod.POST,
+                entity,
+                AccessTokenResponse.class).getBody();
+    }
+
     private String getAuthUrl() {
         return UriComponentsBuilder.fromHttpUrl(keyCloakUrl)
                 .pathSegment("realms")
@@ -69,6 +86,16 @@ public class KeycloakClientService {
                 .pathSegment("protocol")
                 .pathSegment("openid-connect")
                 .pathSegment("auth")
+                .toUriString();
+    }
+
+    private String getLogoutUrl() {
+        return UriComponentsBuilder.fromHttpUrl(keyCloakUrl)
+                .pathSegment("realms")
+                .pathSegment(realm)
+                .pathSegment("protocol")
+                .pathSegment("openid-connect")
+                .pathSegment("logout")
                 .toUriString();
     }
 }

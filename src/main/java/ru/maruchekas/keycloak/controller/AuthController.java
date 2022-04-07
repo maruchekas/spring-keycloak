@@ -5,10 +5,8 @@ import org.keycloak.representations.AccessTokenResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ru.maruchekas.keycloak.api.request.AuthRequest;
+import ru.maruchekas.keycloak.api.request.RefreshTokenRequest;
 import ru.maruchekas.keycloak.service.KeycloakClientService;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
 
 @RestController
 @RequiredArgsConstructor
@@ -23,13 +21,12 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<AccessTokenResponse> refresh(@RequestHeader("refresh_token") String refreshToken) {
+    public ResponseEntity<AccessTokenResponse> refresh(@RequestBody RefreshTokenRequest refreshToken) {
         return ResponseEntity.ok(keycloakClientService.refreshToken(refreshToken));
     }
 
-    @GetMapping(path = "/logout")
-    public String logout(HttpServletRequest request) throws ServletException {
-        request.logout();
-        return "/";
+    @PostMapping(path = "/logout")
+    public ResponseEntity<AccessTokenResponse> logout(@RequestBody RefreshTokenRequest refreshToken) {
+        return ResponseEntity.ok(keycloakClientService.logout(refreshToken));
     }
 }
