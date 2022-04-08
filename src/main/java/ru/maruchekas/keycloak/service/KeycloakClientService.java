@@ -41,18 +41,10 @@ public class KeycloakClientService {
 
         HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(parameters, headers);
 
-        AccessTokenResponse accessTokenResponse;
-
-        try {
-            accessTokenResponse = restTemplate.exchange(getAuthUrl(),
-                    HttpMethod.POST,
-                    entity,
-                    AccessTokenResponse.class).getBody();
-        } catch (Exception e) {
-            throw new AuthenticationDataException();
-        }
-
-        return accessTokenResponse;
+        return restTemplate.exchange(getAuthUrl(),
+                HttpMethod.POST,
+                entity,
+                AccessTokenResponse.class).getBody();
     }
 
     public AccessTokenResponse refreshToken(RefreshTokenRequest request) throws InvalidTokenException {
