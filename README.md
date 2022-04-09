@@ -6,4 +6,4 @@
 *Для просмотра всех эндпоинтов и удобства тестирования добавлен Swagger (доступен на localhost:8088/swagger-ui/index.
 html#)*
 
-![img.png](img.png)
+![img_1.png](img_1.png)

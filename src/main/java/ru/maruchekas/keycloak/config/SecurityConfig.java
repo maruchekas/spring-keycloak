@@ -34,7 +34,7 @@ public class SecurityConfig extends KeycloakWebSecurityConfigurerAdapter {
         http
                 .authorizeRequests()
                 .antMatchers("/**").permitAll()
-                .anyRequest().fullyAuthenticated();
+                .anyRequest().permitAll();
     }
 
     @Override

@@ -70,24 +70,6 @@ public class GroupService {
         return mapMembersToUserDTOList(membersResponse);
     }
 
-    private List<UserDTO> mapMembersToUserDTOList(JSONArray membersResponse){
-        List<UserDTO> userDTOList = new ArrayList<>();
-        for (Object o : membersResponse) {
-            userDTOList.add(mapJsonToUserDTO((JSONObject) o));
-        }
-
-        return userDTOList;
-    }
-
-    private UserDTO mapJsonToUserDTO(JSONObject rawUser){
-        return new UserDTO()
-                .setId(rawUser.getString("id"))
-                .setUsername(rawUser.getString("username"))
-                .setFirstName(rawUser.getString("firstName"))
-                .setLastName(rawUser.getString("lastName"))
-                .setEmail(rawUser.getString("email"));
-    }
-
     public AccessTokenResponse createGroup(CreateGroupRequest createGroupRequest, String accessToken){
 
         HttpHeaders headers = getAuthHeaders(accessToken, MediaType.APPLICATION_JSON);
@@ -116,7 +98,7 @@ public class GroupService {
         HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(body, headers);
 
         return restTemplate.exchange(getBaseGroupUrlWithId(id),
-                HttpMethod.POST,
+                HttpMethod.PUT,
                 entity,
                 AccessTokenResponse.class).getBody();
     }
@@ -161,6 +143,28 @@ public class GroupService {
         }
 
         return groupDTOList;
+    }
+
+    private List<UserDTO> mapMembersToUserDTOList(JSONArray membersResponse){
+        List<UserDTO> userDTOList = new ArrayList<>();
+        for (Object o : membersResponse) {
+            userDTOList.add(mapJsonToUserDTO((JSONObject) o));
+        }
+
+        return userDTOList;
+    }
+
+    private UserDTO mapJsonToUserDTO(JSONObject rawUser){
+        String firstName = rawUser.has("firstName") ? rawUser.getString("firstName") : null;
+        String lastName = rawUser.has("lastName") ? rawUser.getString("lastName") : null;
+        String email = rawUser.has("email") ? rawUser.getString("email") : null;
+
+        return new UserDTO()
+                .setId(rawUser.getString("id"))
+                .setUsername(rawUser.getString("username"))
+                .setFirstName(firstName)
+                .setLastName(lastName)
+                .setEmail(email);
     }
 
     private String getBaseGroupUrlWithId(String id) {
