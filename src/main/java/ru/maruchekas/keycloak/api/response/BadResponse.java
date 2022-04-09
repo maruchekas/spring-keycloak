@@ -1,9 +1,12 @@
 package ru.maruchekas.keycloak.api.response;
 
-import lombok.Data;
+import lombok.*;
 import lombok.experimental.Accessors;
 
-@Data
+@Setter
+@Getter
+@AllArgsConstructor
+@NoArgsConstructor
 @Accessors(chain = true)
 public class BadResponse {
     private String error;
