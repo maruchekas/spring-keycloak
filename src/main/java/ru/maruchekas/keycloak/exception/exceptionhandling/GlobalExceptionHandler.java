@@ -33,11 +33,11 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(badDataResponse, HttpStatus.UNAUTHORIZED);
     }
 
-//    @ExceptionHandler
-//    ResponseEntity<BadResponse> handleInvalidLoginPasswordException(HttpClientErrorException.Unauthorized exception) {
-//        BadResponse badDataResponse = new BadResponse()
-//                .setError("access denied")
-//                .setMessage(Constants.INVALID_LOGIN_PASSWORD.getMessage());
-//        return new ResponseEntity<>(badDataResponse, HttpStatus.FORBIDDEN);
-//    }
+    @ExceptionHandler
+    ResponseEntity<BadResponse> handleInvalidLoginPasswordException(HttpClientErrorException.Unauthorized exception) {
+        BadResponse badDataResponse = new BadResponse()
+                .setError("access denied")
+                .setMessage(Constants.INVALID_LOGIN_PASSWORD.getMessage());
+        return new ResponseEntity<>(badDataResponse, HttpStatus.FORBIDDEN);
+    }
 }

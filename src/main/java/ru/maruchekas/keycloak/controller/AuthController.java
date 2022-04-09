@@ -17,7 +17,7 @@ import ru.maruchekas.keycloak.service.KeycloakClientService;
 
 @RestController
 @RequiredArgsConstructor
-@Tag(name = "Контроллер для работы с Keycloak")
+@Tag(name = "Контроллер для работы с доступом клиента")
 @RequestMapping("/api/authenticate")
 public class AuthController {
 
