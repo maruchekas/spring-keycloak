@@ -1,11 +1,14 @@
 package ru.maruchekas.keycloak.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ru.maruchekas.keycloak.api.request.CreateGroupRequest;
 import ru.maruchekas.keycloak.service.GroupService;
 
+@Tag(name = "Контроллер для работы с группами")
 @RestController
 @RequestMapping("/api/groups")
 @RequiredArgsConstructor
@@ -14,29 +17,49 @@ public class GroupController {
     private final GroupService groupService;
 
     @GetMapping
-    public ResponseEntity<?> getAllGroups(@RequestHeader("Authorization") String accessToken){
+    @Operation(summary = "Метод получения списка групп")
+    public ResponseEntity<?> getAllGroups(@RequestHeader("Authorization") String accessToken) {
         return ResponseEntity.ok(groupService.getAllGroups(accessToken));
 
     }
 
     @GetMapping("/{id}")
+    @Operation(summary = "Метод получения группы по id")
     public ResponseEntity<?> getGroupById(@RequestHeader("Authorization") String accessToken,
-                                             @PathVariable("id") String id){
-        return ResponseEntity.ok(groupService.getGroupById(accessToken));
+                                          @PathVariable("id") String id) {
+        return ResponseEntity.ok(groupService.getGroupById(accessToken, id));
 
     }
 
     @PostMapping
+    @Operation(summary = "Метод создания новой группы")
     public ResponseEntity<?> postNewGroup(@RequestHeader("Authorization") String accessToken,
-                                          @RequestBody CreateGroupRequest createGroupRequest){
+                                          @RequestBody CreateGroupRequest createGroupRequest) {
         return ResponseEntity.ok(groupService.createGroup(createGroupRequest, accessToken));
     }
 
     @DeleteMapping("/{id}")
+    @Operation(summary = "Метод удаления группы по id")
     public ResponseEntity<?> deleteGroupById(@RequestHeader("Authorization") String accessToken,
-                                             @PathVariable("id") String id){
+                                             @PathVariable("id") String id) {
         return ResponseEntity.ok(groupService.deleteGroupById(accessToken, id));
 
+    }
+
+    @PutMapping("/{id}")
+    @Operation(summary = "Метод изменения группы по id")
+    public ResponseEntity<?> updateGroupById(@RequestHeader("Authorization") String accessToken,
+                                             @PathVariable("id") String id,
+                                             @RequestBody CreateGroupRequest request) {
+        return ResponseEntity.ok(groupService.updateGroupById(accessToken, id, request));
+
+    }
+
+    @GetMapping("/{id}/members")
+    @Operation(summary = "Метод получения списка пользователей для группы")
+    public ResponseEntity<?> getMembersByGroupId(@RequestHeader("Authorization") String accessToken,
+                                                 @PathVariable("id") String id){
+        return ResponseEntity.ok(groupService.getGroupMembersByGroupId(accessToken, id));
     }
 
 }
