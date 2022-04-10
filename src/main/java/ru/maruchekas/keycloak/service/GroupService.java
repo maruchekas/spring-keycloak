@@ -18,6 +18,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import ru.maruchekas.keycloak.api.request.CreateGroupRequest;
 import ru.maruchekas.keycloak.dto.GroupDTO;
 import ru.maruchekas.keycloak.dto.UserDTO;
+import ru.maruchekas.keycloak.entity.Access;
 import ru.maruchekas.keycloak.entity.Group;
 
 import java.util.ArrayList;
@@ -42,7 +43,6 @@ public class GroupService {
 
         String stringResponse =
                 restTemplate.exchange(getBaseGroupUrl(), HttpMethod.GET, entity, String.class).getBody();
-
         JSONArray groupArrayJson = new JSONArray(stringResponse);
 
         return mapResponseToListGroups(groupArrayJson, accessToken);
@@ -57,9 +57,13 @@ public class GroupService {
                 String.class);
 
         JSONObject jsonObject = new JSONObject(stringResp.getBody());
+        System.out.println(jsonObject);
         Group group = mapResponseToGroup(jsonObject);
+        Access access = mapJsonToAccess(jsonObject);
 
-        return mapGroupToDTO(group).setUsers(getGroupMembersByGroupId(accessToken,id));
+        return mapGroupToDTO(group)
+                .setUsers(getGroupMembersByGroupId(accessToken,id))
+                .setAccess(access);
     }
 
     public List<UserDTO> getGroupMembersByGroupId(String accessToken, String id) {
@@ -80,7 +84,6 @@ public class GroupService {
 
         MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
         body.add("name", createGroupRequest.getName());
-        body.add("path", createGroupRequest.getPath());
 
         HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(body, headers);
 
@@ -102,7 +105,6 @@ public class GroupService {
 
         GroupRepresentation group = new GroupRepresentation();
         group.setName(createGroupRequest.getName());
-        group.setPath(createGroupRequest.getPath());
 
         return keycloak.realm(realm).groups().add(group).getStatus() == 201
                 ? "Successful created"
@@ -114,7 +116,6 @@ public class GroupService {
 
         MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
         body.add("name", request.getName());
-        body.add("path", request.getPath());
 
         HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(body, headers);
 
@@ -138,7 +139,6 @@ public class GroupService {
         GroupRepresentation group = new GroupRepresentation();
         group.setId(id);
         group.setName(createGroupRequest.getName());
-        group.setPath(createGroupRequest.getPath());
 
         keycloak.realm(realm).groups().group(id).update(group);
     }
@@ -205,6 +205,13 @@ public class GroupService {
                 .setFirstName(firstName)
                 .setLastName(lastName)
                 .setEmail(email);
+    }
+
+    private Access mapJsonToAccess(JSONObject jsonObject){
+        JSONObject accessJson = (JSONObject) jsonObject.get("access");
+        return new Access().setView(accessJson.getBoolean("view"))
+                .setManage(accessJson.getBoolean("manage"))
+                .setManageMembership(accessJson.getBoolean("manageMembership"));
     }
 
     private String getBaseGroupUrlWithId(String id) {
