@@ -43,7 +43,7 @@ public class AuthService {
         map.add("username", authRequest.getUsername());
         map.add("password", authRequest.getPassword());
         map.add("client_id", authRequest.getClientId());
-        map.add("grant_type","password");
+        map.add("grant_type", "password");
 
         HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(map, headers);
         return restTemplate.postForObject(getFullUrl("token"), request, AccessTokenResponse.class);

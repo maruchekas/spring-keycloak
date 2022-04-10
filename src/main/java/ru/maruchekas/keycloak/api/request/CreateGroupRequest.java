@@ -5,9 +5,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import ru.maruchekas.keycloak.entity.Group;
-
-import java.util.List;
 
 @Setter
 @Getter
@@ -17,6 +14,4 @@ import java.util.List;
 public class CreateGroupRequest {
 
     private String name;
-    private String path;
-    private List<Group> subGroups;
 }
