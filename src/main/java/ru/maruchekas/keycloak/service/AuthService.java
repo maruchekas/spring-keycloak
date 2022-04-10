@@ -1,9 +1,7 @@
 package ru.maruchekas.keycloak.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
-import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
-import org.keycloak.admin.client.Keycloak;
-import org.keycloak.admin.client.KeycloakBuilder;
 import org.keycloak.representations.AccessTokenResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -20,9 +18,13 @@ import ru.maruchekas.keycloak.api.request.RefreshTokenRequest;
 import ru.maruchekas.keycloak.exception.AuthenticationDataException;
 import ru.maruchekas.keycloak.exception.InvalidTokenException;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 @Service
 @RequiredArgsConstructor
-public class KeycloakClientService {
+public class AuthService {
     @Value("${keycloak.auth-server-url}")
     private String keyCloakUrl;
     @Value("${keycloak.resource}")
@@ -32,23 +34,23 @@ public class KeycloakClientService {
 
     private final RestTemplate restTemplate;
 
-    public AccessTokenResponse authenticate(AuthRequest request) throws AuthenticationDataException {
+    public AccessTokenResponse authenticate(AuthRequest authRequest) throws AuthenticationDataException {
 
-        Keycloak keycloak = KeycloakBuilder.builder()
-                .serverUrl(keyCloakUrl)
-                .realm(realm)
-                .username(request.getUsername())
-                .password(request.getPassword())
-                .clientId(request.getClientId())
-                .resteasyClient(new ResteasyClientBuilder()
-                        .connectionPoolSize(10).build()).build();
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
-        return keycloak.tokenManager().getAccessToken();
+        MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
+        map.add("username", authRequest.getUsername());
+        map.add("password", authRequest.getPassword());
+        map.add("client_id", authRequest.getClientId());
+        map.add("grant_type","password");
+
+        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(map, headers);
+        return restTemplate.postForObject(getFullUrl("token"), request, AccessTokenResponse.class);
 
     }
 
     public AccessTokenResponse refreshToken(RefreshTokenRequest request) throws InvalidTokenException {
-        AccessTokenResponse accessTokenResponse;
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
@@ -59,17 +61,10 @@ public class KeycloakClientService {
 
         HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(parameters, headers);
 
-
-        try {
-            accessTokenResponse = restTemplate.exchange(getFullUrl("token"),
-                    HttpMethod.POST,
-                    entity,
-                    AccessTokenResponse.class).getBody();
-        } catch (Exception e) {
-            throw new InvalidTokenException();
-        }
-
-        return accessTokenResponse;
+        return restTemplate.exchange(getFullUrl("token"),
+                HttpMethod.POST,
+                entity,
+                AccessTokenResponse.class).getBody();
     }
 
     public AccessTokenResponse logout(RefreshTokenRequest request) throws InvalidTokenException {
@@ -93,6 +88,21 @@ public class KeycloakClientService {
         }
 
         return accessTokenResponse;
+    }
+
+    private String getUserInfo(String accessToken) {
+        MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+        headers.add("Authorization", accessToken);
+
+        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(null, headers);
+        return restTemplate.postForObject(getFullUrl("userinfo"), request, String.class);
+    }
+
+    public List<String> getRoles(String accessToken) throws Exception {
+        String response = getUserInfo(accessToken);
+
+        Map map = new ObjectMapper().readValue(response, HashMap.class);
+        return (List<String>) map.get("roles");
     }
 
     private String getFullUrl(String tail) {
