@@ -1,9 +1,13 @@
 package ru.maruchekas.keycloak.service;
 
 import lombok.RequiredArgsConstructor;
+import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.keycloak.admin.client.Keycloak;
+import org.keycloak.admin.client.KeycloakBuilder;
 import org.keycloak.representations.AccessTokenResponse;
+import org.keycloak.representations.idm.GroupRepresentation;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
@@ -25,10 +29,10 @@ public class GroupService {
 
     @Value("${keycloak.auth-server-url}")
     private String keyCloakUrl;
-    @Value("${keycloak.resource}")
-    private String clientId;
     @Value("${keycloak.realm}")
     private String realm;
+    @Value("${keycloak.resource}")
+    private String clientId;
 
     private final RestTemplate restTemplate;
 
@@ -41,7 +45,7 @@ public class GroupService {
 
         JSONArray groupArrayJson = new JSONArray(stringResponse);
 
-        return mapResponseToListGroups(groupArrayJson);
+        return mapResponseToListGroups(groupArrayJson, accessToken);
     }
 
     public GroupDTO getGroupById(String accessToken, String id) {
@@ -77,7 +81,6 @@ public class GroupService {
         MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
         body.add("name", createGroupRequest.getName());
         body.add("path", createGroupRequest.getPath());
-        body.add("subGroups", null);
 
         HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(body, headers);
 
@@ -87,13 +90,31 @@ public class GroupService {
                 AccessTokenResponse.class).getBody();
     }
 
+    public String createGroupThroughRepresentation(String accessToken, CreateGroupRequest createGroupRequest){
+
+        Keycloak keycloak = KeycloakBuilder.builder()
+                .serverUrl(keyCloakUrl)
+                .realm(realm)
+                .clientId(clientId)
+                .authorization(accessToken)
+                .resteasyClient(new ResteasyClientBuilder()
+                        .connectionPoolSize(10).build()).build();
+
+        GroupRepresentation group = new GroupRepresentation();
+        group.setName(createGroupRequest.getName());
+        group.setPath(createGroupRequest.getPath());
+
+        return keycloak.realm(realm).groups().add(group).getStatus() == 201
+                ? "Successful created"
+                : "failed to create group";
+    }
+
     public AccessTokenResponse updateGroupById(String accessToken, String id, CreateGroupRequest request) {
         HttpHeaders headers = getAuthHeaders(accessToken, MediaType.APPLICATION_JSON);
 
         MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
         body.add("name", request.getName());
         body.add("path", request.getPath());
-        body.add("subGroups", null);
 
         HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(body, headers);
 
@@ -101,6 +122,25 @@ public class GroupService {
                 HttpMethod.PUT,
                 entity,
                 AccessTokenResponse.class).getBody();
+    }
+
+    public void updateGroupThroughRepresentation(String accessToken, CreateGroupRequest createGroupRequest,
+                                                   String id){
+
+        Keycloak keycloak = KeycloakBuilder.builder()
+                .serverUrl(keyCloakUrl)
+                .realm(realm)
+                .clientId(clientId)
+                .authorization(accessToken)
+                .resteasyClient(new ResteasyClientBuilder()
+                        .connectionPoolSize(10).build()).build();
+
+        GroupRepresentation group = new GroupRepresentation();
+        group.setId(id);
+        group.setName(createGroupRequest.getName());
+        group.setPath(createGroupRequest.getPath());
+
+        keycloak.realm(realm).groups().group(id).update(group);
     }
 
     public AccessTokenResponse deleteGroupById(String accessToken, String id){
@@ -135,19 +175,19 @@ public class GroupService {
                 .setAccess(group.getAccess());
     }
 
-    private List<GroupDTO> mapResponseToListGroups(JSONArray groupsJson){
+    private List<GroupDTO> mapResponseToListGroups(JSONArray groupsJson, String accessToken){
         List<GroupDTO> groupDTOList = new ArrayList<>();
         for (Object o : groupsJson) {
             Group group = mapResponseToGroup((JSONObject) o);
-            groupDTOList.add(mapGroupToDTO(group));
+            groupDTOList.add(mapGroupToDTO(group).setUsers(getGroupMembersByGroupId(accessToken, group.getId())));
         }
 
         return groupDTOList;
     }
 
-    private List<UserDTO> mapMembersToUserDTOList(JSONArray membersResponse){
+    private List<UserDTO> mapMembersToUserDTOList(JSONArray membersJson){
         List<UserDTO> userDTOList = new ArrayList<>();
-        for (Object o : membersResponse) {
+        for (Object o : membersJson) {
             userDTOList.add(mapJsonToUserDTO((JSONObject) o));
         }
 
