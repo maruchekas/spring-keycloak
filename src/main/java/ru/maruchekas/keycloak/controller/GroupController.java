@@ -3,14 +3,10 @@ package ru.maruchekas.keycloak.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
-import org.keycloak.admin.client.Keycloak;
-import org.keycloak.admin.client.KeycloakBuilder;
-import org.keycloak.representations.idm.GroupRepresentation;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import ru.maruchekas.keycloak.api.request.ChangeGroupStatusListRequest;
 import ru.maruchekas.keycloak.api.request.CreateGroupRequest;
 import ru.maruchekas.keycloak.service.GroupService;
 
@@ -68,20 +64,18 @@ public class GroupController {
         return ResponseEntity.ok(groupService.getGroupMembersByGroupId(accessToken, id));
     }
 
-    @PostMapping(value = "/create", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> createGroup(@RequestHeader("Authorization") String accessToken,
-                                         @RequestBody CreateGroupRequest createGroupRequest){
-        return ResponseEntity.ok(groupService.createGroupThroughRepresentation(accessToken, createGroupRequest));
+    @PutMapping(value = "/block")
+    @Operation(summary = "Метод блокировки группы или списка групп")
+    public ResponseEntity<?> blockGroup(@RequestHeader("Authorization") String accessToken,
+                                        @RequestBody ChangeGroupStatusListRequest changeGroupStatusRequest){
+        return ResponseEntity.ok(groupService.changeBlockStatusGroup(accessToken, changeGroupStatusRequest));
     }
 
-    @PutMapping("/update/{id}")
-    @Operation(summary = "Метод изменения группы по id")
-    public ResponseEntity<?> updateGroup(@RequestHeader("Authorization") String accessToken,
-                                             @PathVariable("id") String id,
-                                             @RequestBody CreateGroupRequest request) {
-        groupService.updateGroupThroughRepresentation(accessToken, request, id);
-        return new ResponseEntity<>(HttpStatus.OK);
-
+    @PutMapping(value = "/unblock")
+    @Operation(summary = "Метод разблокировки группы или списка групп")
+    public ResponseEntity<?> unblockGroup(@RequestHeader("Authorization") String accessToken,
+                                        @RequestBody ChangeGroupStatusListRequest changeGroupStatusRequest){
+        return ResponseEntity.ok(groupService.changeBlockStatusGroup(accessToken, changeGroupStatusRequest));
     }
 
 }
