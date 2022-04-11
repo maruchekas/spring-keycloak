@@ -44,6 +44,7 @@ public class GroupService {
     private final String keyFirstName = "firstName";
     private final String keyLastName = "lastName";
     private final String keyMembers = "members";
+    private final String keyRoleMapping = "role-mappings";
     private final String keyManage = "manage";
     private final String keyView = "view";
     private final String keyManageMembership = "manageMembership";
@@ -111,7 +112,7 @@ public class GroupService {
                                                            ChangeGroupStatusListRequest changeGroupStatusRequest) {
         List<Group> groups = new ArrayList<>();
         /**
-         * TODO получить список групп из респонса, поменять статусы(проверить возможность), заполнить ответ
+         * TODO получить список групп из реквеста, поменять статусы(проверить возможность), заполнить ответ
          */
 
         return new BlockStatusGroupResponse();
@@ -142,15 +143,33 @@ public class GroupService {
                 AccessTokenResponse.class).getBody();
     }
 
-    public AccessTokenResponse getRoles(String accessToken, String id) {
+    public List<String> getRoles(String accessToken, String id) {
         HttpHeaders headers = getAuthHeaders(accessToken, MediaType.APPLICATION_JSON);
         HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(null, headers);
-        String url = createBaseUrl().pathSegment(id).pathSegment("role-mappings").toUriString();
+        String url = createBaseUrl().pathSegment(id).pathSegment(keyRoleMapping).toUriString();
 
-        return restTemplate.exchange(url,
+        String stringResponse = restTemplate.exchange(url,
                 HttpMethod.GET,
                 entity,
-                AccessTokenResponse.class).getBody();
+                String.class).getBody();
+
+        JSONObject jsonResponse = new JSONObject(stringResponse);
+
+        return mapJsonToRoles(jsonResponse);
+    }
+
+    private List<String> mapJsonToRoles(JSONObject jsonResponse) {
+        List<String> roles = new ArrayList<>();
+        if (jsonResponse.has("realmMappings")) {
+            JSONArray jsonAsRoles = jsonResponse.getJSONArray("realmMappings");
+
+            for (Object o : jsonAsRoles) {
+                JSONObject jsonAsRole = (JSONObject) o;
+                String role = jsonAsRole.getString("name");
+                roles.add(role);
+            }
+        }
+        return roles;
     }
 
     private HttpHeaders getAuthHeaders(String accessToken, MediaType type) {
@@ -162,7 +181,7 @@ public class GroupService {
 
     private Group mapResponseToGroup(JSONObject groupJson) {
         if (groupJson.isEmpty()
-                || !groupJson.has(keyId) || !groupJson.has(keyName) || !groupJson.has(keyPath)){
+                || !groupJson.has(keyId) || !groupJson.has(keyName) || !groupJson.has(keyPath)) {
             throw new FailedGetGroupFromJsonException();
         }
         if (StringUtils.isBlank(groupJson.getString(keyId)) || StringUtils.isBlank(groupJson.getString(keyName))

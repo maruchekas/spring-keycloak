@@ -78,4 +78,11 @@ public class GroupController {
         return ResponseEntity.ok(groupService.changeBlockStatusGroup(accessToken, changeGroupStatusRequest));
     }
 
+    @GetMapping("/{id}/roles")
+    @Operation(summary = "Метод получения списка ролей для группы")
+    public ResponseEntity<?> getRolesByGroupId(@RequestHeader("Authorization") String accessToken,
+                                               @PathVariable("id") String id){
+        return ResponseEntity.ok(groupService.getRoles(accessToken, id));
+    }
+
 }
