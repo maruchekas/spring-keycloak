@@ -35,15 +35,28 @@ public class GroupService {
     private String keyCloakUrl;
     @Value("${keycloak.realm}")
     private String realm;
+    private final String keyId = "id";
+    private final String keyName = "name";
+    private final String keyPath = "path";
+    private final String keyUsername = "username";
+    private final String keyAccess = "access";
+    private final String keyEmail = "email";
+    private final String keyFirstName = "firstName";
+    private final String keyLastName = "lastName";
+    private final String keyMembers = "members";
+    private final String keyManage = "manage";
+    private final String keyView = "view";
+    private final String keyManageMembership = "manageMembership";
 
     private final RestTemplate restTemplate;
 
     public List<GroupDTO> getAllGroups(String accessToken) {
         HttpHeaders headers = getAuthHeaders(accessToken, MediaType.APPLICATION_JSON);
         HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(null, headers);
+        String url = createBaseUrl().toUriString();
 
         String stringResponse =
-                restTemplate.exchange(getBaseGroupUrl(), HttpMethod.GET, entity, String.class).getBody();
+                restTemplate.exchange(url, HttpMethod.GET, entity, String.class).getBody();
         JSONArray groupArrayJson = new JSONArray(stringResponse);
 
         return mapResponseToListGroups(groupArrayJson, accessToken);
@@ -52,7 +65,9 @@ public class GroupService {
     public GroupDTO getGroupById(String accessToken, String id) {
         HttpHeaders headers = getAuthHeaders(accessToken, MediaType.APPLICATION_JSON);
         HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(null, headers);
-        ResponseEntity<String> stringResp = restTemplate.exchange(getBaseGroupUrlWithId(id),
+        String url = createBaseUrl().pathSegment(id).toUriString();
+
+        ResponseEntity<String> stringResp = restTemplate.exchange(url,
                 HttpMethod.GET,
                 entity,
                 String.class);
@@ -68,8 +83,9 @@ public class GroupService {
     public List<UserDTO> getGroupMembersByGroupId(String accessToken, String id) {
         HttpHeaders headers = getAuthHeaders(accessToken, MediaType.APPLICATION_JSON);
         HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(null, headers);
+        String url = createBaseUrl().pathSegment(id).pathSegment(keyMembers).toUriString();
 
-        JSONArray membersResponse = new JSONArray(restTemplate.exchange(getBaseGroupUrlWithId(id) + "/members",
+        JSONArray membersResponse = new JSONArray(restTemplate.exchange(url,
                 HttpMethod.GET,
                 entity,
                 String.class).getBody());
@@ -78,22 +94,21 @@ public class GroupService {
     }
 
     public AccessTokenResponse createGroup(CreateGroupRequest createGroupRequest, String accessToken) {
-
         HttpHeaders headers = getAuthHeaders(accessToken, MediaType.APPLICATION_JSON);
-
         Map<String, String> body = new HashMap<>();
-        body.put("name", createGroupRequest.getName());
+        body.put(keyName, createGroupRequest.getName());
 
         HttpEntity<Map<String, String>> entity = new HttpEntity<>(body, headers);
+        String url = createBaseUrl().toUriString();
 
-        return restTemplate.exchange(getBaseGroupUrl(),
+        return restTemplate.exchange(url,
                 HttpMethod.POST,
                 entity,
                 AccessTokenResponse.class).getBody();
     }
 
-    public BlockStatusGroupResponse changeBlockStatusGroup(String accessToken, ChangeGroupStatusListRequest changeGroupStatusRequest) {
-
+    public BlockStatusGroupResponse changeBlockStatusGroup(String accessToken,
+                                                           ChangeGroupStatusListRequest changeGroupStatusRequest) {
         List<Group> groups = new ArrayList<>();
         /**
          * TODO получить список групп из респонса, поменять статусы(проверить возможность), заполнить ответ
@@ -104,13 +119,13 @@ public class GroupService {
 
     public AccessTokenResponse updateGroupById(String accessToken, String id, CreateGroupRequest request) {
         HttpHeaders headers = getAuthHeaders(accessToken, MediaType.APPLICATION_JSON);
-
         Map<String, String> body = new HashMap<>();
-        body.put("name", request.getName());
+        body.put(keyName, request.getName());
 
         HttpEntity<Map<String, String>> entity = new HttpEntity<>(body, headers);
+        String url = createBaseUrl().pathSegment(id).toUriString();
 
-        return restTemplate.exchange(getBaseGroupUrlWithId(id),
+        return restTemplate.exchange(url,
                 HttpMethod.PUT,
                 entity,
                 AccessTokenResponse.class).getBody();
@@ -119,9 +134,21 @@ public class GroupService {
     public AccessTokenResponse deleteGroupById(String accessToken, String id) {
         HttpHeaders headers = getAuthHeaders(accessToken, MediaType.APPLICATION_JSON);
         HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(null, headers);
+        String url = createBaseUrl().pathSegment(id).toUriString();
 
-        return restTemplate.exchange(getBaseGroupUrlWithId(id),
+        return restTemplate.exchange(url,
                 HttpMethod.DELETE,
+                entity,
+                AccessTokenResponse.class).getBody();
+    }
+
+    public AccessTokenResponse getRoles(String accessToken, String id) {
+        HttpHeaders headers = getAuthHeaders(accessToken, MediaType.APPLICATION_JSON);
+        HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(null, headers);
+        String url = createBaseUrl().pathSegment(id).pathSegment("role-mappings").toUriString();
+
+        return restTemplate.exchange(url,
+                HttpMethod.GET,
                 entity,
                 AccessTokenResponse.class).getBody();
     }
@@ -135,18 +162,18 @@ public class GroupService {
 
     private Group mapResponseToGroup(JSONObject groupJson) {
         if (groupJson.isEmpty()
-                || !groupJson.has("id") || !groupJson.has("name") || !groupJson.has("path")){
+                || !groupJson.has(keyId) || !groupJson.has(keyName) || !groupJson.has(keyPath)){
             throw new FailedGetGroupFromJsonException();
         }
-        if (StringUtils.isBlank(groupJson.getString("id")) || StringUtils.isBlank(groupJson.getString("name"))
-                || StringUtils.isBlank(groupJson.getString("path"))) {
+        if (StringUtils.isBlank(groupJson.getString(keyId)) || StringUtils.isBlank(groupJson.getString(keyName))
+                || StringUtils.isBlank(groupJson.getString(keyPath))) {
             throw new FailedCreateGroupFromJsonException();
         }
 
         return new Group()
-                .setId(groupJson.getString("id"))
-                .setName(groupJson.getString("name"))
-                .setPath(groupJson.getString("path"))
+                .setId(groupJson.getString(keyId))
+                .setName(groupJson.getString(keyName))
+                .setPath(groupJson.getString(keyPath))
                 .setCreatedBy(LocalDateTime.now());
     }
 
@@ -183,42 +210,31 @@ public class GroupService {
     }
 
     private UserDTO mapJsonToUserDTO(JSONObject rawUser) {
-        String firstName = rawUser.has("firstName") ? rawUser.getString("firstName") : null;
-        String lastName = rawUser.has("lastName") ? rawUser.getString("lastName") : null;
-        String email = rawUser.has("email") ? rawUser.getString("email") : null;
+        String firstName = rawUser.has(keyFirstName) ? rawUser.getString(keyFirstName) : null;
+        String lastName = rawUser.has(keyLastName) ? rawUser.getString(keyLastName) : null;
+        String email = rawUser.has(keyEmail) ? rawUser.getString(keyEmail) : null;
 
         return new UserDTO()
-                .setId(rawUser.getString("id"))
-                .setUsername(rawUser.getString("username"))
+                .setId(rawUser.getString(keyId))
+                .setUsername(rawUser.getString(keyUsername))
                 .setFirstName(firstName)
                 .setLastName(lastName)
                 .setEmail(email);
     }
 
     private Access mapJsonToAccess(JSONObject jsonObject) {
-        JSONObject accessJson = (JSONObject) jsonObject.get("access");
-        return new Access().setView(accessJson.getBoolean("view"))
-                .setManage(accessJson.getBoolean("manage"))
-                .setManageMembership(accessJson.getBoolean("manageMembership"));
+        JSONObject accessJson = (JSONObject) jsonObject.get(keyAccess);
+        return new Access().setView(accessJson.getBoolean(keyView))
+                .setManage(accessJson.getBoolean(keyManage))
+                .setManageMembership(accessJson.getBoolean(keyManageMembership));
     }
 
-    private String getBaseGroupUrlWithId(String id) {
+    private UriComponentsBuilder createBaseUrl() {
         return UriComponentsBuilder.fromHttpUrl(keyCloakUrl)
                 .pathSegment("admin")
                 .pathSegment("realms")
                 .pathSegment(realm)
-                .pathSegment("groups")
-                .pathSegment(id)
-                .toUriString();
-    }
-
-    private String getBaseGroupUrl() {
-        return UriComponentsBuilder.fromHttpUrl(keyCloakUrl)
-                .pathSegment("admin")
-                .pathSegment("realms")
-                .pathSegment(realm)
-                .pathSegment("groups")
-                .toUriString();
+                .pathSegment("groups");
     }
 
 }

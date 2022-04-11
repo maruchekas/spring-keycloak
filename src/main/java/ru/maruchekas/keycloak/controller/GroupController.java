@@ -64,14 +64,14 @@ public class GroupController {
         return ResponseEntity.ok(groupService.getGroupMembersByGroupId(accessToken, id));
     }
 
-    @PutMapping(value = "/block")
+    @PutMapping( "/block")
     @Operation(summary = "Метод блокировки группы или списка групп")
     public ResponseEntity<?> blockGroup(@RequestHeader("Authorization") String accessToken,
                                         @RequestBody ChangeGroupStatusListRequest changeGroupStatusRequest){
         return ResponseEntity.ok(groupService.changeBlockStatusGroup(accessToken, changeGroupStatusRequest));
     }
 
-    @PutMapping(value = "/unblock")
+    @PutMapping( "/unblock")
     @Operation(summary = "Метод разблокировки группы или списка групп")
     public ResponseEntity<?> unblockGroup(@RequestHeader("Authorization") String accessToken,
                                         @RequestBody ChangeGroupStatusListRequest changeGroupStatusRequest){
