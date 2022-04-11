@@ -8,7 +8,9 @@ import org.springframework.web.client.HttpClientErrorException;
 import ru.maruchekas.keycloak.api.response.BadResponse;
 import ru.maruchekas.keycloak.config.Constants;
 import ru.maruchekas.keycloak.exception.AuthenticationDataException;
+import ru.maruchekas.keycloak.exception.FailedCreateGroupFromJsonException;
 import ru.maruchekas.keycloak.exception.InvalidTokenException;
+import ru.maruchekas.keycloak.exception.FailedGetGroupFromJsonException;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
@@ -47,5 +49,21 @@ public class GlobalExceptionHandler {
                 .setError("nor found")
                 .setMessage(Constants.ELEMENT_NOT_FOUND.getMessage());
         return new ResponseEntity<>(badDataResponse, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler
+    ResponseEntity<BadResponse> handleFailedGetGroupException(FailedGetGroupFromJsonException exception) {
+        BadResponse badDataResponse = new BadResponse()
+                .setError("getting_group")
+                .setMessage(Constants.FAILED_GET_GROUP.getMessage());
+        return new ResponseEntity<>(badDataResponse, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler
+    ResponseEntity<BadResponse> handleFailedCreateGroupException(FailedCreateGroupFromJsonException exception) {
+        BadResponse badDataResponse = new BadResponse()
+                .setError("creating_group")
+                .setMessage(Constants.FAILED_CREATE_GROUP.getMessage());
+        return new ResponseEntity<>(badDataResponse, HttpStatus.BAD_REQUEST);
     }
 }
