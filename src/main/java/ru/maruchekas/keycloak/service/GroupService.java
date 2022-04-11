@@ -1,25 +1,27 @@
 package ru.maruchekas.keycloak.service;
 
 import lombok.RequiredArgsConstructor;
-import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
+import org.apache.commons.lang3.StringUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.keycloak.admin.client.Keycloak;
-import org.keycloak.admin.client.KeycloakBuilder;
 import org.keycloak.representations.AccessTokenResponse;
-import org.keycloak.representations.idm.GroupRepresentation;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
+import ru.maruchekas.keycloak.api.request.ChangeGroupStatusListRequest;
 import ru.maruchekas.keycloak.api.request.CreateGroupRequest;
+import ru.maruchekas.keycloak.api.response.BlockStatusGroupResponse;
 import ru.maruchekas.keycloak.dto.GroupDTO;
 import ru.maruchekas.keycloak.dto.UserDTO;
 import ru.maruchekas.keycloak.entity.Access;
 import ru.maruchekas.keycloak.entity.Group;
+import ru.maruchekas.keycloak.exception.FailedCreateGroupFromJsonException;
+import ru.maruchekas.keycloak.exception.FailedGetGroupFromJsonException;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -33,8 +35,6 @@ public class GroupService {
     private String keyCloakUrl;
     @Value("${keycloak.realm}")
     private String realm;
-    @Value("${keycloak.resource}")
-    private String clientId;
 
     private final RestTemplate restTemplate;
 
@@ -57,14 +57,12 @@ public class GroupService {
                 entity,
                 String.class);
 
-        JSONObject jsonObject = new JSONObject(stringResp.getBody());
-        System.out.println(jsonObject);
-        Group group = mapResponseToGroup(jsonObject);
-        Access access = mapJsonToAccess(jsonObject);
+        JSONObject groupAsJson = new JSONObject(stringResp.getBody());
+        Group group = mapResponseToGroup(groupAsJson);
 
         return mapGroupToDTO(group)
                 .setUsers(getGroupMembersByGroupId(accessToken, id))
-                .setAccess(access);
+                .setAccess(mapJsonToAccess(groupAsJson));
     }
 
     public List<UserDTO> getGroupMembersByGroupId(String accessToken, String id) {
@@ -94,22 +92,14 @@ public class GroupService {
                 AccessTokenResponse.class).getBody();
     }
 
-    public String createGroupThroughRepresentation(String accessToken, CreateGroupRequest createGroupRequest) {
+    public BlockStatusGroupResponse changeBlockStatusGroup(String accessToken, ChangeGroupStatusListRequest changeGroupStatusRequest) {
 
-        Keycloak keycloak = KeycloakBuilder.builder()
-                .serverUrl(keyCloakUrl)
-                .realm(realm)
-                .clientId(clientId)
-                .authorization(accessToken)
-                .resteasyClient(new ResteasyClientBuilder()
-                        .connectionPoolSize(10).build()).build();
+        List<Group> groups = new ArrayList<>();
+        /**
+         * TODO получить список групп из респонса, поменять статусы(проверить возможность), заполнить ответ
+         */
 
-        GroupRepresentation group = new GroupRepresentation();
-        group.setName(createGroupRequest.getName());
-
-        return keycloak.realm(realm).groups().add(group).getStatus() == 201
-                ? "Successful created"
-                : "failed to create group";
+        return new BlockStatusGroupResponse();
     }
 
     public AccessTokenResponse updateGroupById(String accessToken, String id, CreateGroupRequest request) {
@@ -124,24 +114,6 @@ public class GroupService {
                 HttpMethod.PUT,
                 entity,
                 AccessTokenResponse.class).getBody();
-    }
-
-    public void updateGroupThroughRepresentation(String accessToken, CreateGroupRequest createGroupRequest,
-                                                 String id) {
-
-        Keycloak keycloak = KeycloakBuilder.builder()
-                .serverUrl(keyCloakUrl)
-                .realm(realm)
-                .clientId(clientId)
-                .authorization(accessToken)
-                .resteasyClient(new ResteasyClientBuilder()
-                        .connectionPoolSize(10).build()).build();
-
-        GroupRepresentation group = new GroupRepresentation();
-        group.setId(id);
-        group.setName(createGroupRequest.getName());
-
-        keycloak.realm(realm).groups().group(id).update(group);
     }
 
     public AccessTokenResponse deleteGroupById(String accessToken, String id) {
@@ -162,10 +134,20 @@ public class GroupService {
     }
 
     private Group mapResponseToGroup(JSONObject groupJson) {
+        if (groupJson.isEmpty()
+                || !groupJson.has("id") || !groupJson.has("name") || !groupJson.has("path")){
+            throw new FailedGetGroupFromJsonException();
+        }
+        if (StringUtils.isBlank(groupJson.getString("id")) || StringUtils.isBlank(groupJson.getString("name"))
+                || StringUtils.isBlank(groupJson.getString("path"))) {
+            throw new FailedCreateGroupFromJsonException();
+        }
+
         return new Group()
                 .setId(groupJson.getString("id"))
                 .setName(groupJson.getString("name"))
-                .setPath(groupJson.getString("path"));
+                .setPath(groupJson.getString("path"))
+                .setCreatedBy(LocalDateTime.now());
     }
 
     private GroupDTO mapGroupToDTO(Group group) {
@@ -173,6 +155,11 @@ public class GroupService {
                 .setId(group.getId())
                 .setName(group.getName())
                 .setPath(group.getPath())
+                .setSubGroups(new ArrayList<>())
+                .setGroupAdmin(new ArrayList<>())
+                .setGroupAuditor(new ArrayList<>())
+                .setPolicies(new ArrayList<>())
+                .setCreateDateTime(group.getCreatedBy())
                 .setAccess(group.getAccess());
     }
 
