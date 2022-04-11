@@ -51,6 +51,7 @@ public class AuthService {
     }
 
     public AccessTokenResponse refreshToken(RefreshTokenRequest request) throws InvalidTokenException {
+        AccessTokenResponse accessTokenResponse;
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
@@ -61,10 +62,16 @@ public class AuthService {
 
         HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(parameters, headers);
 
-        return restTemplate.exchange(getFullUrl("token"),
-                HttpMethod.POST,
-                entity,
-                AccessTokenResponse.class).getBody();
+        try {
+            accessTokenResponse = restTemplate.exchange(getFullUrl("token"),
+                    HttpMethod.POST,
+                    entity,
+                    AccessTokenResponse.class).getBody();
+        } catch (RuntimeException e) {
+            throw  new InvalidTokenException();
+        }
+
+        return accessTokenResponse;
     }
 
     public AccessTokenResponse logout(RefreshTokenRequest request) throws InvalidTokenException {
@@ -96,13 +103,6 @@ public class AuthService {
 
         HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(null, headers);
         return restTemplate.postForObject(getFullUrl("userinfo"), request, String.class);
-    }
-
-    public List<String> getRoles(String accessToken) throws Exception {
-        String response = getUserInfo(accessToken);
-
-        Map map = new ObjectMapper().readValue(response, HashMap.class);
-        return (List<String>) map.get("roles");
     }
 
     private String getFullUrl(String tail) {
