@@ -17,18 +17,19 @@ import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import ru.maruchekas.keycloak.AbstractTest;
 import ru.maruchekas.keycloak.api.request.AuthRequest;
+import ru.maruchekas.keycloak.api.request.CreateGroupRequest;
 import ru.maruchekas.keycloak.api.request.RefreshTokenRequest;
 import ru.maruchekas.keycloak.config.Constants;
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@TestPropertySource(value = {"classpath:application-test.properties"})
-public class AuthControllerTest extends AbstractTest {
+public class GroupControllerTest extends AbstractTest {
 
     @Autowired
     private MockMvc mockMvc;
 
-    private final RefreshTokenRequest refreshToken = new RefreshTokenRequest();
+    private String accessToken;
+
     private String username;
     private String password;
     private String clientId;
@@ -38,16 +39,111 @@ public class AuthControllerTest extends AbstractTest {
         username = "myUser";
         password = "password";
         clientId = "mitra-client";
-        getToken();
+        getAccessToken();
     }
-
 
     @AfterEach
     public void cleanup() {
     }
 
-    public void getToken() throws Exception {
+    public void getAccessToken() throws Exception {
+        RefreshTokenRequest tokenRequest = new RefreshTokenRequest();
+        AuthRequest authRequest = new AuthRequest();
+        authRequest.setUsername(username);
+        authRequest.setPassword(password);
+        authRequest.setClientId(clientId);
+        MvcResult result = mockMvc.perform(MockMvcRequestBuilders
+                        .post("/api/authenticate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(authRequest))
+                        .accept(MediaType.APPLICATION_JSON)).andReturn();
 
+        JSONObject jsonObject = new JSONObject(result.getResponse().getContentAsString());
+        tokenRequest.setRefreshToken(jsonObject.getString("access_token"));
+        accessToken = "Bearer " + jsonObject.getString("access_token");
+    }
+
+    @Test
+    public void createGroupTest() throws Exception {
+
+        CreateGroupRequest createGroupRequest = new CreateGroupRequest("TestGroup");
+
+        mockMvc.perform(MockMvcRequestBuilders
+                        .post("/api/groups")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", accessToken)
+                        .content(mapper.writeValueAsString(createGroupRequest))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(MockMvcResultMatchers.status().isOk());
+
+    }
+
+    @Test
+    public void updateGroupByIdTest() throws Exception {
+
+        CreateGroupRequest createGroupRequest = new CreateGroupRequest("TestGroupUpdated");
+
+        mockMvc.perform(MockMvcRequestBuilders
+                        .put("/api/groups/{id}", "31da63c9-527a-44e0-926b-2afab6829fc7")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", accessToken)
+                        .content(mapper.writeValueAsString(createGroupRequest))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(MockMvcResultMatchers.status().isOk());
+
+    }
+
+    @Test
+    public void updateNotExistedGroupByIdTest() throws Exception {
+
+        CreateGroupRequest createGroupRequest = new CreateGroupRequest("TestGroupUpdated");
+
+        mockMvc.perform(MockMvcRequestBuilders
+                        .put("/api/groups/{id}", "31da63c9-527a-44e0-926b-2afab6829fc7")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", accessToken)
+                        .content(mapper.writeValueAsString(createGroupRequest))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.message")
+                        .value(Constants.ELEMENT_NOT_FOUND.getMessage()))
+                .andExpect(MockMvcResultMatchers.status().isNotFound());
+
+    }
+
+    @Test
+    public void deleteGroupByIdTest() throws Exception {
+
+        mockMvc.perform(MockMvcRequestBuilders
+                        .delete("/api/groups/{id}", "31da63c9-527a-44e0-926b-2afab6829fc7")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", accessToken)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(MockMvcResultMatchers.status().isOk());
+
+    }
+
+    @Test
+    public void deleteNotExistedGroupByIdTest() throws Exception {
+
+        mockMvc.perform(MockMvcRequestBuilders
+                        .delete("/api/groups/{id}", "31da63c9-527a-44e0-926b-2afab6829fc7")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", accessToken)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.message")
+                        .value(Constants.ELEMENT_NOT_FOUND.getMessage()))
+                .andExpect(MockMvcResultMatchers.status().isNotFound());
+
+    }
+
+    @Test
+    public void getAllGroupsTest() throws Exception {
+        RefreshTokenRequest tokenRequest = new RefreshTokenRequest();
         AuthRequest authRequest = new AuthRequest();
         authRequest.setUsername(username);
         authRequest.setPassword(password);
@@ -60,95 +156,17 @@ public class AuthControllerTest extends AbstractTest {
                 .andExpect(MockMvcResultMatchers.status().isOk()).andReturn();
 
         JSONObject jsonObject = new JSONObject(result.getResponse().getContentAsString());
-        refreshToken.setRefreshToken(jsonObject.getString("refresh_token"));
-    }
+        tokenRequest.setRefreshToken(jsonObject.getString("access_token"));
+        System.out.println(jsonObject.getString("access_token"));
 
-    @Test
-    public void loginTest() throws Exception {
-        AuthRequest authRequest = new AuthRequest();
-        authRequest.setUsername(username);
-        authRequest.setPassword(password);
-        authRequest.setClientId(clientId);
         mockMvc.perform(MockMvcRequestBuilders
-                        .post("/api/authenticate")
+                        .get("/api/groups")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(mapper.writeValueAsString(authRequest))
+                        .header("Authorization", "Bearer " + jsonObject.getString("access_token"))
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(MockMvcResultHandlers.print())
                 .andExpect(MockMvcResultMatchers.status().isOk());
+
+
     }
-
-    @Test
-    public void badLoginTest() throws Exception {
-        AuthRequest authRequest = new AuthRequest();
-        authRequest.setUsername("myUser1");
-        authRequest.setPassword(password);
-        authRequest.setClientId(clientId);
-        mockMvc.perform(MockMvcRequestBuilders
-                        .post("/api/authenticate")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(mapper.writeValueAsString(authRequest))
-                        .accept(MediaType.APPLICATION_JSON))
-                .andDo(MockMvcResultHandlers.print())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.message")
-                        .value(Constants.INVALID_LOGIN_PASSWORD.getMessage()))
-                .andExpect(MockMvcResultMatchers.status().isForbidden());
-    }
-
-    @Test
-    public void logoutTest() throws Exception {
-
-        mockMvc.perform(MockMvcRequestBuilders
-                        .post("/api/authenticate/logout")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(mapper.writeValueAsString(refreshToken))
-                        .accept(MediaType.APPLICATION_JSON))
-                .andDo(MockMvcResultHandlers.print())
-                .andExpect(MockMvcResultMatchers.status().isOk());
-    }
-
-    @Test
-    public void refreshTokenTest() throws Exception {
-
-        mockMvc.perform(MockMvcRequestBuilders
-                        .post("/api/authenticate/refresh")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(mapper.writeValueAsString(refreshToken))
-                        .accept(MediaType.APPLICATION_JSON))
-                .andDo(MockMvcResultHandlers.print())
-                .andExpect(MockMvcResultMatchers.status().isOk());
-    }
-
-    @Test
-    public void badRefreshTokenTest() throws Exception {
-
-        RefreshTokenRequest invalidToken = refreshToken.setRefreshToken(refreshToken.getRefreshToken() + "a");
-
-        mockMvc.perform(MockMvcRequestBuilders
-                        .post("/api/authenticate/refresh")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(mapper.writeValueAsString(invalidToken))
-                        .accept(MediaType.APPLICATION_JSON))
-                .andDo(MockMvcResultHandlers.print())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.message")
-                        .value(Constants.INVALID_REFRESH_TOKEN.getMessage()))
-                .andExpect(MockMvcResultMatchers.status().isBadRequest());
-    }
-
-    @Test
-    public void badLogoutTest() throws Exception {
-
-        RefreshTokenRequest invalidToken = refreshToken.setRefreshToken(refreshToken.getRefreshToken() + "a");
-
-        mockMvc.perform(MockMvcRequestBuilders
-                        .post("/api/authenticate/logout")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(mapper.writeValueAsString(invalidToken))
-                        .accept(MediaType.APPLICATION_JSON))
-                .andDo(MockMvcResultHandlers.print())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.message")
-                        .value(Constants.INVALID_REFRESH_TOKEN.getMessage()))
-                .andExpect(MockMvcResultMatchers.status().isBadRequest());
-    }
-
 }

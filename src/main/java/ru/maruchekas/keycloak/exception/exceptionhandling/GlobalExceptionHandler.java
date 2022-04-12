@@ -46,7 +46,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler
     ResponseEntity<BadResponse> handleElementNotFoundException(HttpClientErrorException.NotFound exception) {
         BadResponse badDataResponse = new BadResponse()
-                .setError("nor found")
+                .setError("not found")
                 .setMessage(Constants.ELEMENT_NOT_FOUND.getMessage());
         return new ResponseEntity<>(badDataResponse, HttpStatus.NOT_FOUND);
     }

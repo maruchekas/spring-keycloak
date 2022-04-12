@@ -22,10 +22,7 @@ import ru.maruchekas.keycloak.exception.FailedCreateGroupFromJsonException;
 import ru.maruchekas.keycloak.exception.FailedGetGroupFromJsonException;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -211,6 +208,7 @@ public class GroupService {
 
     private List<GroupDTO> mapResponseToListGroups(JSONArray groupsJson, String accessToken) {
         List<GroupDTO> groupDTOList = new ArrayList<>();
+
         for (Object o : groupsJson) {
             Group group = mapResponseToGroup((JSONObject) o);
             groupDTOList.add(mapGroupToDTO(group).setUsers(getGroupMembersByGroupId(accessToken, group.getId())));
