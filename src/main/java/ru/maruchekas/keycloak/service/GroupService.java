@@ -39,7 +39,7 @@ public class GroupService {
     private final RestTemplate restTemplate;
 
     public List<GroupDTO> getAllGroups(String accessToken) {
-        HttpHeaders headers = getAuthHeaders(accessToken, MediaType.APPLICATION_JSON);
+        HttpHeaders headers = getAuthHeaders(accessToken);
         HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(null, headers);
 
         String stringResponse =
@@ -50,7 +50,7 @@ public class GroupService {
     }
 
     public GroupDTO getGroupById(String accessToken, String id) {
-        HttpHeaders headers = getAuthHeaders(accessToken, MediaType.APPLICATION_JSON);
+        HttpHeaders headers = getAuthHeaders(accessToken);
         HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(null, headers);
         ResponseEntity<String> stringResp = restTemplate.exchange(getBaseGroupUrlWithId(id),
                 HttpMethod.GET,
@@ -66,7 +66,7 @@ public class GroupService {
     }
 
     public List<UserDTO> getGroupMembersByGroupId(String accessToken, String id) {
-        HttpHeaders headers = getAuthHeaders(accessToken, MediaType.APPLICATION_JSON);
+        HttpHeaders headers = getAuthHeaders(accessToken);
         HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(null, headers);
 
         JSONArray membersResponse = new JSONArray(restTemplate.exchange(getBaseGroupUrlWithId(id) + "/members",
@@ -79,7 +79,7 @@ public class GroupService {
 
     public AccessTokenResponse createGroup(CreateGroupRequest createGroupRequest, String accessToken) {
 
-        HttpHeaders headers = getAuthHeaders(accessToken, MediaType.APPLICATION_JSON);
+        HttpHeaders headers = getAuthHeaders(accessToken);
 
         Map<String, String> body = new HashMap<>();
         body.put("name", createGroupRequest.getName());
@@ -103,7 +103,7 @@ public class GroupService {
     }
 
     public AccessTokenResponse updateGroupById(String accessToken, String id, CreateGroupRequest request) {
-        HttpHeaders headers = getAuthHeaders(accessToken, MediaType.APPLICATION_JSON);
+        HttpHeaders headers = getAuthHeaders(accessToken);
 
         Map<String, String> body = new HashMap<>();
         body.put("name", request.getName());
@@ -117,7 +117,7 @@ public class GroupService {
     }
 
     public AccessTokenResponse deleteGroupById(String accessToken, String id) {
-        HttpHeaders headers = getAuthHeaders(accessToken, MediaType.APPLICATION_JSON);
+        HttpHeaders headers = getAuthHeaders(accessToken);
         HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(null, headers);
 
         return restTemplate.exchange(getBaseGroupUrlWithId(id),
@@ -126,9 +126,9 @@ public class GroupService {
                 AccessTokenResponse.class).getBody();
     }
 
-    private HttpHeaders getAuthHeaders(String accessToken, MediaType type) {
+    private HttpHeaders getAuthHeaders(String accessToken) {
         HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(type);
+        headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("Authorization", accessToken);
         return headers;
     }
