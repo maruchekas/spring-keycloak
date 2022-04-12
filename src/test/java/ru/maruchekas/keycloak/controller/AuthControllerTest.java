@@ -1,6 +1,5 @@
 package ru.maruchekas.keycloak.controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.json.JSONObject;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,7 +21,7 @@ import ru.maruchekas.keycloak.config.Constants;
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@TestPropertySource(value = {"classpath:application-test.properties"})
+@TestPropertySource(value = {"classpath:application-test.yml"})
 public class AuthControllerTest extends AbstractTest {
 
     @Autowired
