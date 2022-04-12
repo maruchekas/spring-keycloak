@@ -1,7 +1,7 @@
 package ru.maruchekas.keycloak.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.keycloak.representations.AccessTokenResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -18,10 +18,7 @@ import ru.maruchekas.keycloak.api.request.RefreshTokenRequest;
 import ru.maruchekas.keycloak.exception.AuthenticationDataException;
 import ru.maruchekas.keycloak.exception.InvalidTokenException;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthService {

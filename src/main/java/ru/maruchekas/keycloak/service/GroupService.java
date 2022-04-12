@@ -1,6 +1,7 @@
 package ru.maruchekas.keycloak.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -24,6 +25,7 @@ import ru.maruchekas.keycloak.exception.FailedGetGroupFromJsonException;
 import java.time.LocalDateTime;
 import java.util.*;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class GroupService {
