@@ -8,10 +8,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.client.HttpClientErrorException;
 import ru.maruchekas.keycloak.api.response.BadResponse;
 import ru.maruchekas.keycloak.config.Constants;
-import ru.maruchekas.keycloak.exception.AuthenticationDataException;
-import ru.maruchekas.keycloak.exception.FailedCreateGroupFromJsonException;
-import ru.maruchekas.keycloak.exception.InvalidTokenException;
-import ru.maruchekas.keycloak.exception.FailedGetGroupFromJsonException;
+import ru.maruchekas.keycloak.exception.*;
 
 @Slf4j
 @ControllerAdvice
@@ -54,10 +51,34 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler
+    ResponseEntity<BadResponse> handleGroupAlreadyExistsException(GroupAlreadyExistsException exception) {
+        BadResponse badDataResponse = new BadResponse()
+                .setError("duplicate")
+                .setMessage(Constants.ELEMENT_ALREADY_EXISTS.getMessage());
+        return new ResponseEntity<>(badDataResponse, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler
+    ResponseEntity<BadResponse> handleFailedGetListOfGroupsException(FailedGetListOfGroupsException exception) {
+        BadResponse badDataResponse = new BadResponse()
+                .setError("conflict")
+                .setMessage(Constants.FAILED_GET_GROUP_LIST.getMessage());
+        return new ResponseEntity<>(badDataResponse, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler
     ResponseEntity<BadResponse> handleFailedGetGroupException(FailedGetGroupFromJsonException exception) {
         BadResponse badDataResponse = new BadResponse()
                 .setError("getting_group")
                 .setMessage(Constants.FAILED_GET_GROUP.getMessage());
+        return new ResponseEntity<>(badDataResponse, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler
+    ResponseEntity<BadResponse> handleFailedGetMembersException(FailedGetMembersException exception) {
+        BadResponse badDataResponse = new BadResponse()
+                .setError("getting_members")
+                .setMessage(Constants.FAILED_GET_MEMBERS.getMessage());
         return new ResponseEntity<>(badDataResponse, HttpStatus.BAD_REQUEST);
     }
 

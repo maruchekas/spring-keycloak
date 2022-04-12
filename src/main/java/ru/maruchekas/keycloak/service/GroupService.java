@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import ru.maruchekas.keycloak.api.request.ChangeGroupStatusListRequest;
@@ -19,8 +20,7 @@ import ru.maruchekas.keycloak.dto.GroupDTO;
 import ru.maruchekas.keycloak.dto.UserDTO;
 import ru.maruchekas.keycloak.entity.Access;
 import ru.maruchekas.keycloak.entity.Group;
-import ru.maruchekas.keycloak.exception.FailedCreateGroupFromJsonException;
-import ru.maruchekas.keycloak.exception.FailedGetGroupFromJsonException;
+import ru.maruchekas.keycloak.exception.*;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -57,6 +57,9 @@ public class GroupService {
 
         String stringResponse =
                 restTemplate.exchange(url, HttpMethod.GET, entity, String.class).getBody();
+        if (stringResponse == null){
+            throw new FailedGetListOfGroupsException();
+        }
         JSONArray groupArrayJson = new JSONArray(stringResponse);
 
         return mapResponseToListGroups(groupArrayJson, accessToken);
@@ -67,12 +70,15 @@ public class GroupService {
         HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(null, headers);
         String url = createBaseUrl().pathSegment(id).toUriString();
 
-        ResponseEntity<String> stringResp = restTemplate.exchange(url,
+        ResponseEntity<String> stringResponse = restTemplate.exchange(url,
                 HttpMethod.GET,
                 entity,
                 String.class);
 
-        JSONObject groupAsJson = new JSONObject(stringResp.getBody());
+        if (stringResponse.getBody() == null){
+            throw new FailedGetListOfGroupsException();
+        }
+        JSONObject groupAsJson = new JSONObject(stringResponse.getBody());
         Group group = mapResponseToGroup(groupAsJson);
 
         return mapGroupToDTO(group)
@@ -85,10 +91,14 @@ public class GroupService {
         HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(null, headers);
         String url = createBaseUrl().pathSegment(id).pathSegment(keyMembers).toUriString();
 
-        JSONArray membersResponse = new JSONArray(restTemplate.exchange(url,
+        String stringResponse = restTemplate.exchange(url,
                 HttpMethod.GET,
                 entity,
-                String.class).getBody());
+                String.class).getBody();
+        if (stringResponse == null){
+            throw new FailedGetMembersException();
+        }
+        JSONArray membersResponse = new JSONArray(stringResponse);
 
         return mapMembersToUserDTOList(membersResponse);
     }
@@ -102,11 +112,17 @@ public class GroupService {
 
         HttpEntity<Map<String, String>> entity = new HttpEntity<>(body, headers);
         String url = createBaseUrl().toUriString();
+        AccessTokenResponse accessTokenResponse;
 
-        return restTemplate.exchange(url,
-                HttpMethod.POST,
-                entity,
-                AccessTokenResponse.class).getBody();
+        try {
+            accessTokenResponse = restTemplate.exchange(url,
+                    HttpMethod.POST,
+                    entity,
+                    AccessTokenResponse.class).getBody();
+        } catch (HttpClientErrorException.Conflict exception){
+            throw new GroupAlreadyExistsException();
+        }
+        return accessTokenResponse;
     }
 
     public BlockStatusGroupResponse changeBlockStatusGroup(String accessToken,
