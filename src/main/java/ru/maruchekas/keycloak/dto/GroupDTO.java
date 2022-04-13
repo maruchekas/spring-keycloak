@@ -26,6 +26,7 @@ public class GroupDTO {
         private List<String> groupAuditor;
         private boolean blocked;
         private boolean softDeleted;
+        private int priority;
         private LocalDateTime createdAt;
         private String createdBy;
         private LocalDateTime updatedAt;

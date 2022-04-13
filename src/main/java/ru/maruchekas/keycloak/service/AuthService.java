@@ -17,7 +17,6 @@ import org.springframework.web.util.UriComponentsBuilder;
 import ru.maruchekas.keycloak.api.request.AuthRequest;
 import ru.maruchekas.keycloak.api.request.RefreshTokenRequest;
 import ru.maruchekas.keycloak.dto.UserDTO;
-import ru.maruchekas.keycloak.entity.User;
 import ru.maruchekas.keycloak.exception.AuthenticationDataException;
 import ru.maruchekas.keycloak.exception.InvalidTokenException;
 
@@ -109,8 +108,8 @@ public class AuthService {
         }
         JSONObject jsonUser = new JSONObject(stringResponse);
         return new UserDTO()
-                .setId(jsonUser.getString("sub"))
-                .setUsername(jsonUser.getString("preferred_username"));
+                .setUserId(jsonUser.getString("sub"))
+                .setUserName(jsonUser.getString("preferred_username"));
     }
 
     private String getFullUrl(String tail) {

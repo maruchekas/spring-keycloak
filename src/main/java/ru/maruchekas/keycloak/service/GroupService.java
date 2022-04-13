@@ -3,6 +3,7 @@ package ru.maruchekas.keycloak.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.checkerframework.framework.qual.FromByteCode;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.keycloak.representations.AccessTokenResponse;
@@ -15,6 +16,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import ru.maruchekas.keycloak.api.request.ChangeGroupStatusListRequest;
 import ru.maruchekas.keycloak.api.request.CreateGroupRequest;
+import ru.maruchekas.keycloak.api.request.DeleteGroupRequest;
 import ru.maruchekas.keycloak.api.response.BlockStatusGroupResponse;
 import ru.maruchekas.keycloak.dto.GroupDTO;
 import ru.maruchekas.keycloak.dto.UserDTO;
@@ -47,9 +49,6 @@ public class GroupService {
     private final String keyLastName = "lastName";
     private final String keyMembers = "members";
     private final String keyRoleMapping = "role-mappings";
-    private final String keyManage = "manage";
-    private final String keyView = "view";
-    private final String keyManageMembership = "manageMembership";
 
     private final RestTemplate restTemplate;
     private final AuthService authService;
@@ -84,12 +83,9 @@ public class GroupService {
         }
         JSONObject groupAsJson = new JSONObject(stringResponse.getBody());
         Group group = mapResponseToGroup(groupAsJson);
-        UserDTO currentUser = authService.getUserInfo(accessToken);
-        System.out.println(authService.getUserInfo(accessToken));
 
         return mapGroupToDTO(group)
-                .setUsers(getGroupMembersByGroupId(accessToken, id))
-                .setCreatedBy(currentUser.getUsername());
+                .setUsers(getGroupMembersByGroupId(accessToken, id));
     }
 
     public List<UserDTO> getGroupMembersByGroupId(String accessToken, String id) {
@@ -112,24 +108,35 @@ public class GroupService {
     public AccessTokenResponse createGroup(CreateGroupRequest createGroupRequest, String accessToken) {
 
         HttpHeaders headers = getAuthHeaders(accessToken);
+        AccessTokenResponse accessTokenResponse = new AccessTokenResponse();
 
-        Map<String, String> body = new HashMap<>();
-        body.put(keyName, createGroupRequest.getName());
+        for (GroupDTO groupDto : createGroupRequest.getGroupData()) {
+            Attribute attribute = new Attribute()
+                    .setPolicies(groupDto.getPolicies())
+                    .setGroupAdmin(groupDto.getGroupAdmin())
+                    .setGroupAuditor(groupDto.getGroupAuditor())
+                    .setCreatedAt(List.of(LocalDateTime.now().toString()))
+                    .setCreatedBy(List.of(authService.getUserInfo(accessToken).getUserId()))
+                    .setUpdatedAt(LocalDateTime.now());
 
-        HttpEntity<Map<String, String>> entity = new HttpEntity<>(body, headers);
-        String url = createBaseUrl().toUriString();
-        AccessTokenResponse accessTokenResponse;
+            Group group = new Group()
+                    .setName(groupDto.getGroupName()).setAttributes(attribute);
 
-        try {
-            accessTokenResponse = restTemplate.exchange(url,
-                    HttpMethod.POST,
-                    entity,
-                    AccessTokenResponse.class).getBody();
-        } catch (HttpClientErrorException.Conflict exception) {
-            throw new GroupAlreadyExistsException();
+            HttpEntity<Group> entity = new HttpEntity<>(group, headers);
+            String url = createBaseUrl().toUriString();
+
+            try {
+                accessTokenResponse = restTemplate.exchange(url,
+                        HttpMethod.POST,
+                        entity,
+                        AccessTokenResponse.class).getBody();
+            } catch (HttpClientErrorException.Conflict exception) {
+                throw new GroupAlreadyExistsException();
+            }
         }
-        return accessTokenResponse;
+            return accessTokenResponse;
     }
+
 
     public BlockStatusGroupResponse changeBlockStatusGroup(String accessToken,
                                                            ChangeGroupStatusListRequest changeGroupStatusRequest) {
@@ -141,30 +148,51 @@ public class GroupService {
         return new BlockStatusGroupResponse();
     }
 
-    public AccessTokenResponse updateGroupById(String accessToken, String id, CreateGroupRequest request) {
+    public AccessTokenResponse updateGroupById(String accessToken, String id, CreateGroupRequest createGroupRequest) {
         HttpHeaders headers = getAuthHeaders(accessToken);
+        AccessTokenResponse accessTokenResponse = new AccessTokenResponse();
 
-        Map<String, String> body = new HashMap<>();
-        body.put(keyName, request.getName());
+        for (GroupDTO groupDto : createGroupRequest.getGroupData()) {
+            Attribute attribute = new Attribute()
+                    .setPolicies(groupDto.getPolicies())
+                    .setGroupAdmin(groupDto.getGroupAdmin())
+                    .setGroupAuditor(groupDto.getGroupAuditor())
+                    .setCreatedAt(List.of(LocalDateTime.now().toString()))
+                    .setCreatedBy(List.of(authService.getUserInfo(accessToken).getUserId()))
+                    .setUpdatedAt(LocalDateTime.now());
 
-        HttpEntity<Map<String, String>> entity = new HttpEntity<>(body, headers);
-        String url = createBaseUrl().pathSegment(id).toUriString();
+            Group group = new Group()
+                    .setName(groupDto.getGroupName()).setAttributes(attribute);
 
-        return restTemplate.exchange(url,
-                HttpMethod.PUT,
-                entity,
-                AccessTokenResponse.class).getBody();
+            HttpEntity<Group> entity = new HttpEntity<>(group, headers);
+            String url = createBaseUrl().toUriString();
+
+            try {
+                accessTokenResponse = restTemplate.exchange(url,
+                        HttpMethod.PUT,
+                        entity,
+                        AccessTokenResponse.class).getBody();
+            } catch (HttpClientErrorException.Conflict exception) {
+                throw new GroupAlreadyExistsException();
+            }
+        }
+        return accessTokenResponse;
     }
 
-    public AccessTokenResponse deleteGroupById(String accessToken, String id) {
+    public AccessTokenResponse deleteGroupById(String accessToken, DeleteGroupRequest deleteRequest) {
+
+        AccessTokenResponse accessTokenResponse = new AccessTokenResponse();
         HttpHeaders headers = getAuthHeaders(accessToken);
         HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(null, headers);
-        String url = createBaseUrl().pathSegment(id).toUriString();
+        for (String groupId : deleteRequest.getGroupIds()) {
+            String url = createBaseUrl().pathSegment(groupId).toUriString();
 
-        return restTemplate.exchange(url,
-                HttpMethod.DELETE,
-                entity,
-                AccessTokenResponse.class).getBody();
+            accessTokenResponse = restTemplate.exchange(url,
+                    HttpMethod.DELETE,
+                    entity,
+                    AccessTokenResponse.class).getBody();
+        }
+        return accessTokenResponse;
     }
 
     public List<String> getRoles(String accessToken, String id) {
@@ -214,20 +242,18 @@ public class GroupService {
         }
 
         return new Group()
-                .setGroupId(groupJson.getString(keyId))
-                .setGroupName(groupJson.getString(keyName))
-                .setAttributes(mapJsonToGroupAttributes(groupJson))
-                .setCreatedBy(LocalDateTime.now());
+                .setId(groupJson.getString(keyId))
+                .setName(groupJson.getString(keyName))
+                .setAttributes(mapJsonToGroupAttributes(groupJson));
     }
 
     private GroupDTO mapGroupToDTO(Group group) {
         return new GroupDTO()
-                .setGroupId(group.getGroupId())
-                .setGroupName(group.getGroupName())
+                .setGroupId(group.getId())
+                .setGroupName(group.getName())
                 .setPolicies(group.getAttributes().getPolicies())
                 .setGroupAdmin(group.getAttributes().getGroupAdmin())
                 .setGroupAuditor(group.getAttributes().getGroupAuditor())
-                .setCreatedAt(group.getCreatedBy())
                 .setUpdatedAt(LocalDateTime.now());
     }
 
@@ -236,7 +262,7 @@ public class GroupService {
 
         for (Object o : groupsJson) {
             Group group = mapResponseToGroup((JSONObject) o);
-            groupDTOList.add(mapGroupToDTO(group).setUsers(getGroupMembersByGroupId(accessToken, group.getGroupId())));
+            groupDTOList.add(mapGroupToDTO(group).setUsers(getGroupMembersByGroupId(accessToken, group.getId())));
         }
 
         return groupDTOList;
@@ -252,24 +278,21 @@ public class GroupService {
     }
 
     private UserDTO mapJsonToUserDTO(JSONObject rawUser) {
-        String firstName = rawUser.has(keyFirstName) ? rawUser.getString(keyFirstName) : null;
-        String lastName = rawUser.has(keyLastName) ? rawUser.getString(keyLastName) : null;
         String email = rawUser.has(keyEmail) ? rawUser.getString(keyEmail) : null;
 
         return new UserDTO()
-                .setId(rawUser.getString(keyId))
-                .setUsername(rawUser.getString(keyUsername))
-                .setFirstName(firstName)
-                .setLastName(lastName)
-                .setEmail(email);
+                .setUserId(rawUser.getString(keyId))
+                .setUserName(rawUser.getString(keyUsername))
+                .setUserEmail(email);
     }
 
     private Attribute mapJsonToGroupAttributes(JSONObject jsonObject) {
         Attribute groupAttribute = new Attribute();
-        JSONObject attributesJson = new JSONObject();
+        JSONObject attributesJson;
         List<String> policies = new ArrayList<>();
         List<String> groupAdmin = new ArrayList<>();
         List<String> groupAuditor = new ArrayList<>();
+        LocalDateTime createdAt = null;
 
         if (jsonObject.has(keyAttributes)) {
             attributesJson = (JSONObject) jsonObject.get(keyAttributes);
@@ -291,6 +314,13 @@ public class GroupService {
                 JSONArray arrayGroupAuditor = attributesJson.getJSONArray("groupAuditor");
                 for (Object o : arrayGroupAuditor) {
                     groupAuditor.add((String) o);
+                }
+                groupAttribute.setGroupAuditor(groupAuditor);
+            }
+            if (attributesJson.has("createdAt")) {
+                JSONArray arrayGroupAuditor = attributesJson.getJSONArray("createdAt");
+                for (Object o : arrayGroupAuditor) {
+                    System.out.println(o);
                 }
                 groupAttribute.setGroupAuditor(groupAuditor);
             }

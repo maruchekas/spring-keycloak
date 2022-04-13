@@ -15,8 +15,11 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import ru.maruchekas.keycloak.AbstractTest;
 import ru.maruchekas.keycloak.api.request.AuthRequest;
 import ru.maruchekas.keycloak.api.request.CreateGroupRequest;
+import ru.maruchekas.keycloak.api.request.DeleteGroupRequest;
 import ru.maruchekas.keycloak.api.request.RefreshTokenRequest;
 import ru.maruchekas.keycloak.config.Constants;
+
+import java.util.List;
 
 @SpringBootTest
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -62,39 +65,39 @@ public class GroupControllerTest extends AbstractTest {
         accessToken = "Bearer " + jsonObject.getString("access_token");
     }
 
-    @Test
-    @Order(10)
-    public void createGroupTest() throws Exception {
+//    @Test
+//    @Order(10)
+//    public void createGroupTest() throws Exception {
+//
+//        CreateGroupRequest createGroupRequest = new CreateGroupRequest("AAATestGroup");
+//
+//        mockMvc.perform(MockMvcRequestBuilders
+//                        .post("/api/groups")
+//                        .contentType(MediaType.APPLICATION_JSON)
+//                        .header("Authorization", accessToken)
+//                        .content(mapper.writeValueAsString(createGroupRequest))
+//                        .accept(MediaType.APPLICATION_JSON))
+//                .andDo(MockMvcResultHandlers.print())
+//                .andExpect(MockMvcResultMatchers.status().isOk());
+//    }
 
-        CreateGroupRequest createGroupRequest = new CreateGroupRequest("AAATestGroup");
-
-        mockMvc.perform(MockMvcRequestBuilders
-                        .post("/api/groups")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .header("Authorization", accessToken)
-                        .content(mapper.writeValueAsString(createGroupRequest))
-                        .accept(MediaType.APPLICATION_JSON))
-                .andDo(MockMvcResultHandlers.print())
-                .andExpect(MockMvcResultMatchers.status().isOk());
-    }
-
-    @Test
-    @Order(20)
-    public void createDuplicateGroupTest() throws Exception {
-
-        CreateGroupRequest createGroupRequest = new CreateGroupRequest("AAATestGroup");
-
-        mockMvc.perform(MockMvcRequestBuilders
-                        .post("/api/groups")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .header("Authorization", accessToken)
-                        .content(mapper.writeValueAsString(createGroupRequest))
-                        .accept(MediaType.APPLICATION_JSON))
-                .andDo(MockMvcResultHandlers.print())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.message")
-                        .value(Constants.ELEMENT_ALREADY_EXISTS.getMessage()))
-                .andExpect(MockMvcResultMatchers.status().isBadRequest());
-    }
+//    @Test
+//    @Order(20)
+//    public void createDuplicateGroupTest() throws Exception {
+//
+//        CreateGroupRequest createGroupRequest = new CreateGroupRequest("AAATestGroup");
+//
+//        mockMvc.perform(MockMvcRequestBuilders
+//                        .post("/api/groups")
+//                        .contentType(MediaType.APPLICATION_JSON)
+//                        .header("Authorization", accessToken)
+//                        .content(mapper.writeValueAsString(createGroupRequest))
+//                        .accept(MediaType.APPLICATION_JSON))
+//                .andDo(MockMvcResultHandlers.print())
+//                .andExpect(MockMvcResultMatchers.jsonPath("$.message")
+//                        .value(Constants.ELEMENT_ALREADY_EXISTS.getMessage()))
+//                .andExpect(MockMvcResultMatchers.status().isBadRequest());
+//    }
 
     @Test
     @Order(30)
@@ -109,7 +112,7 @@ public class GroupControllerTest extends AbstractTest {
                 .andExpect(MockMvcResultMatchers.status().isOk()).andReturn();
 
         JSONArray groups = new JSONArray(result.getResponse().getContentAsString());
-        groupId = groups.getJSONObject(0).getString("id");
+        groupId = groups.getJSONObject(0).getString("groupId");
 
     }
 
@@ -118,7 +121,7 @@ public class GroupControllerTest extends AbstractTest {
     public void getGroupByIdTest() throws Exception {
 
         mockMvc.perform(MockMvcRequestBuilders
-                        .get("/api/groups/{id}", groupId)
+                        .get("/api/groups/{group-id}", groupId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", accessToken)
                         .accept(MediaType.APPLICATION_JSON))
@@ -143,22 +146,22 @@ public class GroupControllerTest extends AbstractTest {
 
     }
 
-    @Test
-    @Order(60)
-    public void updateGroupByIdTest() throws Exception {
-
-        CreateGroupRequest createGroupRequest = new CreateGroupRequest("TestGroupUpdated");
-
-        mockMvc.perform(MockMvcRequestBuilders
-                        .put("/api/groups/{id}", groupId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .header("Authorization", accessToken)
-                        .content(mapper.writeValueAsString(createGroupRequest))
-                        .accept(MediaType.APPLICATION_JSON))
-                .andDo(MockMvcResultHandlers.print())
-                .andExpect(MockMvcResultMatchers.status().isOk());
-
-    }
+//    @Test
+//    @Order(60)
+//    public void updateGroupByIdTest() throws Exception {
+//
+//        CreateGroupRequest createGroupRequest = new CreateGroupRequest("AAATestGroupUpdated");
+//
+//        mockMvc.perform(MockMvcRequestBuilders
+//                        .put("/api/groups/{id}", groupId)
+//                        .contentType(MediaType.APPLICATION_JSON)
+//                        .header("Authorization", accessToken)
+//                        .content(mapper.writeValueAsString(createGroupRequest))
+//                        .accept(MediaType.APPLICATION_JSON))
+//                .andDo(MockMvcResultHandlers.print())
+//                .andExpect(MockMvcResultMatchers.status().isOk());
+//
+//    }
 
     @Test
     @Order(70)
@@ -178,41 +181,47 @@ public class GroupControllerTest extends AbstractTest {
     @Order(80)
     public void deleteGroupByIdTest() throws Exception {
 
+        DeleteGroupRequest deleteRequest = new DeleteGroupRequest().setGroupIds(List.of(groupId));
+
         mockMvc.perform(MockMvcRequestBuilders
-                        .delete("/api/groups/{id}", groupId)
+                        .delete("/api/groups/delete")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", accessToken)
+                        .content(mapper.writeValueAsString(deleteRequest))
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(MockMvcResultHandlers.print())
                 .andExpect(MockMvcResultMatchers.status().isOk());
 
     }
 
-    @Test
-    public void updateNotExistedGroupByIdTest() throws Exception {
-
-        CreateGroupRequest createGroupRequest = new CreateGroupRequest("TestGroupUpdated");
-
-        mockMvc.perform(MockMvcRequestBuilders
-                        .put("/api/groups/{id}", groupId + "a")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .header("Authorization", accessToken)
-                        .content(mapper.writeValueAsString(createGroupRequest))
-                        .accept(MediaType.APPLICATION_JSON))
-                .andDo(MockMvcResultHandlers.print())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.message")
-                        .value(Constants.ELEMENT_NOT_FOUND.getMessage()))
-                .andExpect(MockMvcResultMatchers.status().isNotFound());
-
-    }
+//    @Test
+//    public void updateNotExistedGroupByIdTest() throws Exception {
+//
+//        CreateGroupRequest createGroupRequest = new CreateGroupRequest("TestGroupUpdated");
+//
+//        mockMvc.perform(MockMvcRequestBuilders
+//                        .put("/api/groups/{id}", groupId)
+//                        .contentType(MediaType.APPLICATION_JSON)
+//                        .header("Authorization", accessToken)
+//                        .content(mapper.writeValueAsString(createGroupRequest))
+//                        .accept(MediaType.APPLICATION_JSON))
+//                .andDo(MockMvcResultHandlers.print())
+//                .andExpect(MockMvcResultMatchers.jsonPath("$.message")
+//                        .value(Constants.ELEMENT_NOT_FOUND.getMessage()))
+//                .andExpect(MockMvcResultMatchers.status().isNotFound());
+//
+//    }
 
     @Test
     public void deleteNotExistedGroupByIdTest() throws Exception {
 
+        DeleteGroupRequest deleteRequest = new DeleteGroupRequest().setGroupIds(List.of(groupId));
+
         mockMvc.perform(MockMvcRequestBuilders
-                        .delete("/api/groups/{id}", groupId + "a")
+                        .delete("/api/groups/delete", groupId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", accessToken)
+                        .content(mapper.writeValueAsString(deleteRequest))
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(MockMvcResultHandlers.print())
                 .andExpect(MockMvcResultMatchers.jsonPath("$.message")
