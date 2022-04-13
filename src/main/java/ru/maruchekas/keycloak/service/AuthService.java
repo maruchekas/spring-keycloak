@@ -2,6 +2,7 @@ package ru.maruchekas.keycloak.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.json.JSONObject;
 import org.keycloak.representations.AccessTokenResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -15,6 +16,8 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import ru.maruchekas.keycloak.api.request.AuthRequest;
 import ru.maruchekas.keycloak.api.request.RefreshTokenRequest;
+import ru.maruchekas.keycloak.dto.UserDTO;
+import ru.maruchekas.keycloak.entity.User;
 import ru.maruchekas.keycloak.exception.AuthenticationDataException;
 import ru.maruchekas.keycloak.exception.InvalidTokenException;
 
@@ -94,12 +97,20 @@ public class AuthService {
         return accessTokenResponse;
     }
 
-    private String getUserInfo(String accessToken) {
+    public UserDTO getUserInfo(String accessToken) {
+        String stringResponse;
         MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
         headers.add("Authorization", accessToken);
 
         HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(null, headers);
-        return restTemplate.postForObject(getFullUrl("userinfo"), request, String.class);
+        stringResponse = restTemplate.postForObject(getFullUrl("userinfo"), request, String.class);
+        if (stringResponse == null){
+            throw new AuthenticationDataException();
+        }
+        JSONObject jsonUser = new JSONObject(stringResponse);
+        return new UserDTO()
+                .setId(jsonUser.getString("sub"))
+                .setUsername(jsonUser.getString("preferred_username"));
     }
 
     private String getFullUrl(String tail) {

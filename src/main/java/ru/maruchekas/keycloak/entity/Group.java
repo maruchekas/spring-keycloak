@@ -10,16 +10,15 @@ import java.util.List;
 @Accessors(chain = true)
 public class Group {
 
-    private String id;
-    private String name;
-    private String path;
+    private String groupId;
+    private String groupName;
     private LocalDateTime createdBy;
     private boolean blocked;
+    private boolean softDeleted;
     private Attribute attributes;
     private List<String> realmRoles;
     private List<String> clientRoles;
     private List<Group> subGroups;
-    private Access access;
 
 }
 
