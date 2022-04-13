@@ -58,15 +58,14 @@ public class GroupController {
 
     }
 
-//    @PutMapping("/{id}")
-//    @Operation(summary = "Метод изменения группы по id")
-//    public ResponseEntity<?> updateGroupById(@RequestHeader("Authorization") String accessToken,
-//                                             @PathVariable("id") String id,
-//                                             @RequestBody CreateGroupRequest request) {
-//        log.info("Попытка изменения группы \"{}\"", id);
-//        return ResponseEntity.ok(groupService.updateGroupById(accessToken, id, request));
-//
-//    }
+    @PutMapping("/edit-group")
+    @Operation(summary = "Метод изменения группы по id")
+    public ResponseEntity<?> updateGroupById(@RequestHeader("Authorization") String accessToken,
+                                             @RequestBody CreateGroupRequest request) {
+        log.info("Попытка изменения группы ");
+        return ResponseEntity.ok(groupService.updateGroupById(accessToken, request));
+
+    }
 
     @GetMapping("/{id}/members")
     @Operation(summary = "Метод получения списка пользователей для группы")

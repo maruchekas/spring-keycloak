@@ -148,7 +148,7 @@ public class GroupService {
         return new BlockStatusGroupResponse();
     }
 
-    public AccessTokenResponse updateGroupById(String accessToken, String id, CreateGroupRequest createGroupRequest) {
+    public AccessTokenResponse updateGroupById(String accessToken, CreateGroupRequest createGroupRequest) {
         HttpHeaders headers = getAuthHeaders(accessToken);
         AccessTokenResponse accessTokenResponse = new AccessTokenResponse();
 
@@ -165,7 +165,7 @@ public class GroupService {
                     .setName(groupDto.getGroupName()).setAttributes(attribute);
 
             HttpEntity<Group> entity = new HttpEntity<>(group, headers);
-            String url = createBaseUrl().toUriString();
+            String url = createBaseUrl().pathSegment(groupDto.getGroupId()).toUriString();
 
             try {
                 accessTokenResponse = restTemplate.exchange(url,
