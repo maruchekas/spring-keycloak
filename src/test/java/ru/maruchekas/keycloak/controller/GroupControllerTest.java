@@ -14,7 +14,6 @@ import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import ru.maruchekas.keycloak.AbstractTest;
 import ru.maruchekas.keycloak.api.request.AuthRequest;
-import ru.maruchekas.keycloak.api.request.CreateGroupRequest;
 import ru.maruchekas.keycloak.api.request.DeleteGroupRequest;
 import ru.maruchekas.keycloak.api.request.RefreshTokenRequest;
 import ru.maruchekas.keycloak.config.Constants;

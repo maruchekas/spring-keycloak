@@ -5,9 +5,9 @@ import lombok.experimental.Accessors;
 
 @Data
 @Accessors(chain = true)
-public class User {
+public class GroupAuditor {
 
-    private String userId;
-    private String userName;
-    private String userEmail;
+    private String groupAdminId;
+    private String groupAdminName;
+
 }

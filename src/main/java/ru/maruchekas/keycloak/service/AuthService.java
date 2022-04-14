@@ -96,21 +96,6 @@ public class AuthService {
         return accessTokenResponse;
     }
 
-    public UserDTO getUserInfo(String accessToken) {
-        String stringResponse;
-        MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
-        headers.add("Authorization", accessToken);
-
-        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(null, headers);
-        stringResponse = restTemplate.postForObject(getFullUrl("userinfo"), request, String.class);
-        if (stringResponse == null){
-            throw new AuthenticationDataException();
-        }
-        JSONObject jsonUser = new JSONObject(stringResponse);
-        return new UserDTO()
-                .setUserId(jsonUser.getString("sub"))
-                .setUserName(jsonUser.getString("preferred_username"));
-    }
 
     private String getFullUrl(String tail) {
         return UriComponentsBuilder.fromHttpUrl(keyCloakUrl)

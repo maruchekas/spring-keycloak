@@ -5,10 +5,9 @@ import lombok.experimental.Accessors;
 
 @Data
 @Accessors(chain = true)
-public class Access {
+public class GroupAdmin {
 
-    private boolean view;
-    private boolean manage;
-    private boolean manageMembership;
+    private String groupAdminId;
+    private String groupAdminName;
 
 }
