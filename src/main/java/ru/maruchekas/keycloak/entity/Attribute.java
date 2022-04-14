@@ -1,9 +1,11 @@
 package ru.maruchekas.keycloak.entity;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.experimental.Accessors;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Setter
@@ -18,9 +20,10 @@ public class Attribute {
     private List<String> groupAuditor;
     private List<String> createdAt;
     private List<String> createdBy;
-    private LocalDateTime updatedAt;
-//    private List<String> updatedBy;
-//    private boolean blocked;
-//    private boolean softDeleted;
+    private List<String> updatedAt;
+    private List<String> updatedBy;
+    private boolean blocked;
+    private boolean softDeleted;
+    private int priority;
 
 }

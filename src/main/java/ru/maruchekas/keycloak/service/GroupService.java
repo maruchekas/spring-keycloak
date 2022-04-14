@@ -3,7 +3,6 @@ package ru.maruchekas.keycloak.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.checkerframework.framework.qual.FromByteCode;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.keycloak.representations.AccessTokenResponse;
@@ -26,9 +25,7 @@ import ru.maruchekas.keycloak.exception.*;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @Slf4j
 @Service
@@ -111,13 +108,19 @@ public class GroupService {
         AccessTokenResponse accessTokenResponse = new AccessTokenResponse();
 
         for (GroupDTO groupDto : createGroupRequest.getGroupData()) {
+
+            String createdAtAsStr = "\"" + LocalDateTime.now() + "\"";
+            UserDTO author = authService.getUserInfo(accessToken);
+            String createdBy = author.getUserId() + ", " + author.getUserName();
+
             Attribute attribute = new Attribute()
                     .setPolicies(groupDto.getPolicies())
                     .setGroupAdmin(groupDto.getGroupAdmin())
                     .setGroupAuditor(groupDto.getGroupAuditor())
-                    .setCreatedAt(List.of(LocalDateTime.now().toString()))
-                    .setCreatedBy(List.of(authService.getUserInfo(accessToken).getUserId()))
-                    .setUpdatedAt(LocalDateTime.now());
+                    .setCreatedAt(List.of(createdAtAsStr))
+                    .setCreatedBy(List.of(createdBy))
+                    .setUpdatedAt(List.of(createdAtAsStr))
+                    .setUpdatedBy(List.of(""));
 
             Group group = new Group()
                     .setName(groupDto.getGroupName()).setAttributes(attribute);
@@ -134,7 +137,7 @@ public class GroupService {
                 throw new GroupAlreadyExistsException();
             }
         }
-            return accessTokenResponse;
+        return accessTokenResponse;
     }
 
 
@@ -153,13 +156,15 @@ public class GroupService {
         AccessTokenResponse accessTokenResponse = new AccessTokenResponse();
 
         for (GroupDTO groupDto : createGroupRequest.getGroupData()) {
+            String updatedAtAsStr = "\"" + LocalDateTime.now() + "\"";
+
             Attribute attribute = new Attribute()
                     .setPolicies(groupDto.getPolicies())
                     .setGroupAdmin(groupDto.getGroupAdmin())
                     .setGroupAuditor(groupDto.getGroupAuditor())
-                    .setCreatedAt(List.of(LocalDateTime.now().toString()))
+                    .setCreatedAt(List.of(groupDto.getCreatedAt()))
                     .setCreatedBy(List.of(authService.getUserInfo(accessToken).getUserId()))
-                    .setUpdatedAt(LocalDateTime.now());
+                    .setUpdatedAt(List.of(updatedAtAsStr)).setUpdatedBy(List.of(""));
 
             Group group = new Group()
                     .setName(groupDto.getGroupName()).setAttributes(attribute);
@@ -248,13 +253,31 @@ public class GroupService {
     }
 
     private GroupDTO mapGroupToDTO(Group group) {
+        GroupDTO groupDTO = new GroupDTO();
+        Attribute attribute = new Attribute();
+        if (group.getAttributes() != null) {
+            attribute = group.getAttributes();
+            groupDTO.setGroupAdmin(attribute.getGroupAdmin())
+                    .setGroupAuditor(attribute.getGroupAuditor())
+                    .setCreatedAt(attribute.getCreatedAt().get(0))
+                    .setCreatedBy(attribute.getCreatedBy().get(0))
+                    .setUpdatedAt(attribute.getUpdatedAt().get(0))
+                    .setUpdatedBy(attribute.getUpdatedBy().get(0));
+        }
+
         return new GroupDTO()
                 .setGroupId(group.getId())
                 .setGroupName(group.getName())
+                .setPriority(group.getAttributes().getPriority())
                 .setPolicies(group.getAttributes().getPolicies())
                 .setGroupAdmin(group.getAttributes().getGroupAdmin())
                 .setGroupAuditor(group.getAttributes().getGroupAuditor())
-                .setUpdatedAt(LocalDateTime.now());
+                .setCreatedBy(group.getAttributes().getCreatedBy().get(0))
+                .setCreatedAt(group.getAttributes().getCreatedAt().get(0))
+                .setUpdatedAt(group.getAttributes().getUpdatedAt().get(0))
+                .setUpdatedBy(group.getAttributes().getUpdatedBy().get(0))
+                .setBlocked(group.getAttributes().isBlocked())
+                .setSoftDeleted(group.getAttributes().isSoftDeleted());
     }
 
     private List<GroupDTO> mapResponseToListGroups(JSONArray groupsJson, String accessToken) {
@@ -292,10 +315,14 @@ public class GroupService {
         List<String> policies = new ArrayList<>();
         List<String> groupAdmin = new ArrayList<>();
         List<String> groupAuditor = new ArrayList<>();
-        LocalDateTime createdAt = null;
+        List<String> createdAt = new ArrayList<>();
+        List<String> updatedAt = new ArrayList<>();
+        List<String> createdBy = new ArrayList<>();
+        List<String> updatedBy = new ArrayList<>();
 
         if (jsonObject.has(keyAttributes)) {
             attributesJson = (JSONObject) jsonObject.get(keyAttributes);
+
             if (attributesJson.has("policies")) {
                 JSONArray arrayPolicies = attributesJson.getJSONArray("policies");
                 for (Object o : arrayPolicies) {
@@ -317,12 +344,43 @@ public class GroupService {
                 }
                 groupAttribute.setGroupAuditor(groupAuditor);
             }
+            if (attributesJson.has("createdBy")) {
+                JSONArray arrayCreatedBy = attributesJson.getJSONArray("createdBy");
+                createdBy.add(arrayCreatedBy.getString(0));
+                groupAttribute.setCreatedBy(createdBy);
+            }
+            if (attributesJson.has("updatedBy")) {
+                JSONArray arrayUpdatedBy = attributesJson.getJSONArray("updatedBy");
+                updatedBy.add(arrayUpdatedBy.getString(0));
+                groupAttribute.setUpdatedBy(updatedBy);
+            }
             if (attributesJson.has("createdAt")) {
-                JSONArray arrayGroupAuditor = attributesJson.getJSONArray("createdAt");
-                for (Object o : arrayGroupAuditor) {
-                    System.out.println(o);
+                JSONArray arrayCreatedAt = attributesJson.getJSONArray("createdAt");
+                for (Object o : arrayCreatedAt) {
+                    String date = (String) o;
+                    createdAt.add((date.replaceAll("\"", "")));
                 }
-                groupAttribute.setGroupAuditor(groupAuditor);
+                groupAttribute.setCreatedAt(createdAt);
+            }
+            if (attributesJson.has("updatedAt")) {
+                JSONArray arrayUpdatedAt = attributesJson.getJSONArray("updatedAt");
+                for (Object o : arrayUpdatedAt) {
+                    String date = (String) o;
+                    updatedAt.add((date.replaceAll("\"", "")));
+                }
+                groupAttribute.setUpdatedAt(updatedAt);
+            }
+            if (attributesJson.has("blocked")) {
+                JSONArray arrayBlocked = attributesJson.getJSONArray("blocked");
+                groupAttribute.setBlocked(arrayBlocked.getBoolean(0));
+            }
+            if (attributesJson.has("softDeleted")) {
+                JSONArray arraySoftDeleted = attributesJson.getJSONArray("softDeleted");
+                groupAttribute.setSoftDeleted(arraySoftDeleted.getBoolean(0));
+            }
+            if (attributesJson.has("priority")) {
+                JSONArray arrayPriority = attributesJson.getJSONArray("priority");
+                groupAttribute.setPriority(arrayPriority.getInt(0));
             }
         }
 

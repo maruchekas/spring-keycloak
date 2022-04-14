@@ -17,7 +17,7 @@ import java.util.List;
     @Accessors(chain = true)
 public class GroupDTO {
 
-        private int code;
+        private String code;
         private String groupId;
         private String groupName;
         private List<UserDTO> users;
@@ -27,9 +27,9 @@ public class GroupDTO {
         private boolean blocked;
         private boolean softDeleted;
         private int priority;
-        private LocalDateTime createdAt;
+        private String createdAt;
         private String createdBy;
-        private LocalDateTime updatedAt;
-        private UserDTO updatedBy;
+        private String updatedAt;
+        private String updatedBy;
 
 }
