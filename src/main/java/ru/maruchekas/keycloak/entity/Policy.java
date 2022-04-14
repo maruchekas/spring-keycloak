@@ -10,7 +10,11 @@ import lombok.experimental.Accessors;
 @Accessors(chain = true)
 public class Policy {
 
-    private String policyId;
-    private String policyName;
+    private String id;
+    private String name;
+    private String containerId;
+    private boolean composite;
+    private boolean clientRole;
+    private Attribute attributes;
 
 }

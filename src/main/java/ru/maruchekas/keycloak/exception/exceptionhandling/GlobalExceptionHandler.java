@@ -17,7 +17,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler
     ResponseEntity<BadResponse> handleInvalidTokenException(InvalidTokenException exception) {
         BadResponse badDataResponse = new BadResponse().setError("token").setMessage(exception.getMessage());
-        return new ResponseEntity<>(badDataResponse, HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(badDataResponse, HttpStatus.UNAUTHORIZED);
     }
 
     @ExceptionHandler
@@ -27,7 +27,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler
-    ResponseEntity<BadResponse> handleInvalidClientException(HttpClientErrorException.BadRequest exception) {
+    ResponseEntity<BadResponse> handleInvalidClientException(HttpClientErrorException.Unauthorized exception) {
         BadResponse badDataResponse = new BadResponse()
                 .setError("invalid client")
                 .setMessage(Constants.INVALID_CLIENT.getMessage());
@@ -35,11 +35,11 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler
-    ResponseEntity<BadResponse> handleInvalidLoginPasswordException(HttpClientErrorException.Unauthorized exception) {
+    ResponseEntity<BadResponse> handleInvalidLoginPasswordException(HttpClientErrorException.Forbidden exception) {
         BadResponse badDataResponse = new BadResponse()
                 .setError("access denied")
                 .setMessage(Constants.INVALID_LOGIN_PASSWORD.getMessage());
-        return new ResponseEntity<>(badDataResponse, HttpStatus.FORBIDDEN);
+        return new ResponseEntity<>(badDataResponse, HttpStatus.UNAUTHORIZED);
     }
 
     @ExceptionHandler

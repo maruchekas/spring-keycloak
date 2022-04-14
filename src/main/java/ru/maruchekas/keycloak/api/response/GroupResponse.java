@@ -1,5 +1,6 @@
 package ru.maruchekas.keycloak.api.response;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -18,9 +19,10 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Accessors(chain = true)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class GroupResponse {
 
-    private int code;
+    private Integer code;
     private String groupName;
     private List<User> users;
     private List<Policy> policies;

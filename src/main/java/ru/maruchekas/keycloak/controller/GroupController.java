@@ -4,11 +4,9 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ru.maruchekas.keycloak.api.request.ChangeGroupStatusListRequest;
-import ru.maruchekas.keycloak.api.request.CreateGroupData;
 import ru.maruchekas.keycloak.api.request.CreateGroupDataRequest;
 import ru.maruchekas.keycloak.api.request.DeleteGroupRequest;
 import ru.maruchekas.keycloak.service.GroupService;
@@ -27,22 +25,22 @@ public class GroupController {
     private final GroupService groupService;
     private final UserService userService;
 
-    @GetMapping
-    @Operation(summary = "Метод получения списка групп")
-    public ResponseEntity<?> getAllGroups(@RequestHeader("Authorization") String accessToken) {
-        log.info("Попытка получения списка групп");
-        return ResponseEntity.ok(groupService.getAllGroups(accessToken));
+//    @GetMapping
+//    @Operation(summary = "Метод получения списка групп")
+//    public ResponseEntity<?> getAllGroups(@RequestHeader("Authorization") String accessToken) {
+//        log.info("Попытка получения списка групп");
+//        return ResponseEntity.ok(groupService.getAllGroups(accessToken));
+//
+//    }
 
-    }
-
-    @PostMapping("/{group-id}")
-    @Operation(summary = "Метод получения группы по id")
-    public ResponseEntity<?> getGroupById(@RequestHeader("Authorization") String accessToken,
-                                          @PathVariable("group-id") String groupId) {
-        log.info("Попытка получения группы \"{}\"", groupId);
-        return ResponseEntity.ok(groupService.getGroupById(accessToken, groupId));
-
-    }
+//    @PostMapping("/{group-id}")
+//    @Operation(summary = "Метод получения группы по id")
+//    public ResponseEntity<?> getGroupById(@RequestHeader("Authorization") String accessToken,
+//                                          @PathVariable("group-id") String groupId) {
+//        log.info("Попытка получения группы \"{}\"", groupId);
+//        return ResponseEntity.ok(groupService.getGroupById(accessToken, groupId));
+//
+//    }
 
     @PostMapping("add-group")
     @Operation(summary = "Метод создания новой группы")
@@ -98,20 +96,12 @@ public class GroupController {
         return ResponseEntity.ok(groupService.changeBlockStatusGroup(accessToken, changeGroupStatusRequest));
     }
 
-    @GetMapping("/{id}/roles")
+    @PostMapping("/{groupId}/role/{roleId}")
     @Operation(summary = "Метод получения списка ролей для группы")
-    public ResponseEntity<?> getRolesByGroupId(@RequestHeader("Authorization") String accessToken,
-                                               @PathVariable("id") String id){
-        log.info("Попытка получения ролей для групп {}", id);
-        return ResponseEntity.ok(groupService.getRoles(accessToken, id));
-    }
-
-    @PostMapping("/{groupId}/users/{userId}")
-    @Operation(summary = "Метод получения списка ролей для группы")
-    public ResponseEntity<?> getRolesByGroupId(@RequestHeader("Authorization") String accessToken,
-                                               @PathVariable("groupId") String groupId,
-                                               @PathVariable ("userId") String userId){
-        return ResponseEntity.ok(userService.addUserToGroup(groupId, userId, accessToken));
+    public ResponseEntity<?> addRoleToGroup(@RequestHeader("Authorization") String accessToken,
+                                               @PathVariable String groupId,
+                                               @PathVariable("roleId") String roleId){
+        return ResponseEntity.ok(groupService.addRoleToGroup(groupId, roleId, accessToken));
     }
 
 }
