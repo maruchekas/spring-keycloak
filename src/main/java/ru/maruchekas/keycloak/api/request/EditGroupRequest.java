@@ -6,7 +6,9 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import ru.maruchekas.keycloak.dto.PolicyDTO;
-import ru.maruchekas.keycloak.entity.*;
+import ru.maruchekas.keycloak.entity.GroupAdmin;
+import ru.maruchekas.keycloak.entity.GroupAuditor;
+import ru.maruchekas.keycloak.entity.User;
 
 import java.util.List;
 
@@ -15,7 +17,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Accessors(chain = true)
-public class CreateGroupRequest {
+public class EditGroupRequest {
 
     private String groupId;
     private String groupName;
@@ -23,5 +25,6 @@ public class CreateGroupRequest {
     private List<PolicyDTO> policies;
     private List<GroupAdmin> groupAdmin;
     private List<GroupAuditor> groupAuditor;
+    private boolean softDeleted;
     private int priority;
 }

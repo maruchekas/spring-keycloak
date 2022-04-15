@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import ru.maruchekas.keycloak.api.request.EditGroupRequest;
 
 import java.util.List;
 
@@ -13,7 +14,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Accessors(chain = true)
-public class CreateGroupDataRequest {
+public class EditGroupListRequest {
 
-    List<CreateGroupRequest> groups;
+    List<EditGroupRequest> groups;
 }

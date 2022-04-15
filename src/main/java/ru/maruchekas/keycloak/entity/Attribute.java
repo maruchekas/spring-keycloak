@@ -20,12 +20,11 @@ public class Attribute {
     private List<String> policies;
     private List<String> groupAdmin;
     private List<String> groupAuditor;
-    private LocalDateTime createdAt;
-    private UserDTO createdBy;
     private boolean blocked;
     private boolean softDeleted;
     private int priority;
-
-//    private LocalDateTime updatedAt;
-//    private UserDTO updatedBy;
+    private LocalDateTime createdAt;
+    private UserDTO createdBy;
+    private LocalDateTime updatedAt;
+    private UserDTO updatedBy;
 }

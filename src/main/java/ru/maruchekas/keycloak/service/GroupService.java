@@ -12,10 +12,7 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
-import ru.maruchekas.keycloak.api.request.ChangeGroupStatusListRequest;
-import ru.maruchekas.keycloak.api.request.CreateGroupRequest;
-import ru.maruchekas.keycloak.api.request.CreateGroupDataRequest;
-import ru.maruchekas.keycloak.api.request.DeleteGroupRequest;
+import ru.maruchekas.keycloak.api.request.*;
 import ru.maruchekas.keycloak.api.response.BlockStatusGroupResponse;
 import ru.maruchekas.keycloak.api.response.GroupListResponse;
 import ru.maruchekas.keycloak.api.response.GroupResponse;
@@ -51,8 +48,6 @@ public class GroupService {
     private final String keyUsername = "username";
     private final String keyAttributes = "attributes";
     private final String keyEmail = "email";
-    private final String keyFirstName = "firstName";
-    private final String keyLastName = "lastName";
     private final String keyMembers = "members";
     private final String keyRoleMapping = "role-mappings";
 
@@ -81,10 +76,15 @@ public class GroupService {
         List<GroupResponse> groupResponseList = new ArrayList<>();
 
         for (String groupId : groups) {
-            groupResponseList.add(getGroupById(accessToken, groupId).setCode(null));
+            GroupResponse groupResponse = getGroupById(accessToken, groupId).setCode(null);
+            if (!groupResponse.isSoftDeleted() && !groupResponse.isBlocked())
+            groupResponseList.add(groupResponse);
         }
 
-        return new GroupListResponse().setGroups(groupResponseList).setCode(HttpStatus.OK.value());
+        return new GroupListResponse()
+                .setGroups(groupResponseList)
+                .setCode(HttpStatus.OK.value())
+                .setPageTotal(groupResponseList.size());
     }
 
     public GroupResponse getGroupById(String accessToken, String id) {
@@ -143,7 +143,7 @@ public class GroupService {
         }
 
 
-            return new GroupResponse()
+        return new GroupResponse()
                 .setGroupId(groupId)
                 .setGroupName(groupName)
                 .setCreatedAt(attribute.getCreatedAt())
@@ -157,24 +157,7 @@ public class GroupService {
                 .setGroupAuditor(groupAuditors);
     }
 
-    public List<User> getGroupMembersByGroupId(String accessToken, String groupId) {
-        HttpHeaders headers = getAuthHeaders(accessToken);
-        HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(null, headers);
-        String url = createBaseUrl().pathSegment(groupId).pathSegment(keyMembers).toUriString();
-
-        String stringResponse = restTemplate.exchange(url,
-                HttpMethod.GET,
-                entity,
-                String.class).getBody();
-        if (stringResponse == null) {
-            throw new FailedGetMembersException();
-        }
-        JSONArray membersResponse = new JSONArray(stringResponse);
-
-        return mapMembersToUserDTOList(membersResponse);
-    }
-
-    public GroupListResponse createGroup(CreateGroupDataRequest createGroupRequest, String accessToken) {
+    public GroupListResponse createGroup(CreateGroupListRequest createGroupRequest, String accessToken) {
 
         HttpHeaders headers = getAuthHeaders(accessToken);
         GroupListResponse groupsResponse = new GroupListResponse();
@@ -195,13 +178,11 @@ public class GroupService {
                 throw new GroupAlreadyExistsException();
             }
 
-            for (User user : request.getUsers()) {
-                userService.addUserToGroup(getGroupIgByName(accessToken, request.getGroupName()), user.getUserId(),
-                        accessToken);
-            }
-
-            for (PolicyDTO role : request.getPolicies()) {
-                addRoleToGroup(getGroupIgByName(accessToken, request.getGroupName()), role.getPolicyId(), accessToken);
+            if (request.getUsers() != null) {
+                for (User user : request.getUsers()) {
+                    userService.addUserToGroup(getGroupIgByName(accessToken, request.getGroupName()), user.getUserId(),
+                            accessToken);
+                }
             }
 
             GroupResponse response = new GroupResponse()
@@ -216,10 +197,57 @@ public class GroupService {
             groups.add(response);
         }
 
-        return groupsResponse.setCode(HttpStatus.CREATED.value()).setGroups(groups);
+        return groupsResponse.setCode(HttpStatus.OK.value()).setGroups(groups);
     }
 
-    private GroupDTO mapRequestToGroupDTO(CreateGroupRequest request, String accessToken){
+    private GroupDTO editRequestToGroupDTO(CreateGroupRequest request, String accessToken) {
+        GroupDTO group = new GroupDTO();
+        AttributeDTO attribute = new AttributeDTO();
+        long currentTime = ZonedDateTime.of(LocalDateTime.now(), ZoneId.systemDefault()).toInstant().toEpochMilli();
+
+
+        List<String> priority = List.of(String.valueOf(request.getPriority()));
+        List<String> updatedBy = List.of(userService.getUserInfo(accessToken).getUserName());
+        List<String> updatedAt = List.of(String.valueOf(currentTime));
+        List<String> blocked = List.of(String.valueOf(false));
+        List<String> softDeleted = List.of(String.valueOf(false));
+        List<String> groupAdmin = new ArrayList<>();
+        List<String> groupAuditor = new ArrayList<>();
+        List<String> policies = new ArrayList<>();
+
+        for (GroupAdmin admin : request.getGroupAdmin()) {
+            String strAdmin = admin.getGroupAdminId() + " : " + admin.getGroupAdminName();
+            groupAdmin.add(strAdmin);
+        }
+
+        for (GroupAuditor auditor : request.getGroupAuditor()) {
+            String strAuditor = auditor.getGroupAuditorId() + " : " + auditor.getGroupAuditorName();
+            groupAuditor.add(strAuditor);
+        }
+
+        if (request.getPolicies() != null) {
+            for (PolicyDTO p : request.getPolicies()) {
+                String policy = p.getPolicyId() + " : " + p.getPolicyName();
+                policies.add(policy);
+            }
+        }
+
+        attribute.setPriority(priority)
+                .setCreatedBy(updatedBy)
+                .setCreatedAt(updatedAt)
+                .setPolicies(policies)
+                .setGroupAdmin(groupAdmin)
+                .setGroupAuditor(groupAuditor)
+                .setBlocked(blocked)
+                .setSoftDeleted(softDeleted);
+
+        group.setName(request.getGroupName())
+                .setAttributes(attribute);
+
+        return group;
+    }
+
+    private GroupDTO mapRequestToGroupDTO(CreateGroupRequest request, String accessToken) {
         GroupDTO group = new GroupDTO();
         AttributeDTO attribute = new AttributeDTO();
         long currentTime = ZonedDateTime.of(LocalDateTime.now(), ZoneId.systemDefault()).toInstant().toEpochMilli();
@@ -277,53 +305,90 @@ public class GroupService {
         return new BlockStatusGroupResponse();
     }
 
-//    public AccessTokenResponse updateGroupById(String accessToken, CreateGroupData createGroupData) {
-//        HttpHeaders headers = getAuthHeaders(accessToken);
-//        AccessTokenResponse accessTokenResponse = new AccessTokenResponse();
-//
-//        for (GroupDTO groupDto : createGroupData) {
-//            String updatedAtAsStr = "\"" + LocalDateTime.now() + "\"";
-//
-//            Attribute attribute = new Attribute()
-//                    .setPolicies(groupDto.getPolicies())
-//                    .setGroupAdmin(groupDto.getGroupAdmin())
-//                    .setGroupAuditor(groupDto.getGroupAuditor())
-//                    .setCreatedAt(List.of(groupDto.getCreatedAt()))
-//                    .setCreatedBy(List.of(authService.getUserInfo(accessToken).getUserId()))
-//                    .setUpdatedAt(List.of(updatedAtAsStr)).setUpdatedBy(List.of(""));
-//
-//            Group group = new Group()
-//                    .setName(groupDto.getGroupName()).setAttributes(attribute);
-//
-//            HttpEntity<Group> entity = new HttpEntity<>(group, headers);
-//            String url = createBaseUrl().pathSegment(groupDto.getGroupId()).toUriString();
-//
-//            try {
-//                accessTokenResponse = restTemplate.exchange(url,
-//                        HttpMethod.PUT,
-//                        entity,
-//                        AccessTokenResponse.class).getBody();
-//            } catch (HttpClientErrorException.Conflict exception) {
-//                throw new GroupAlreadyExistsException();
-//            }
-//        }
-//        return accessTokenResponse;
-//    }
+    public AccessTokenResponse updateGroup(String accessToken, EditGroupListRequest editRequest) {
+        HttpHeaders headers = getAuthHeaders(accessToken);
+        AccessTokenResponse accessTokenResponse = new AccessTokenResponse();
+
+        for (EditGroupRequest edit : editRequest.getGroups()) {
+            String groupId = edit.getGroupId();
+            GroupResponse groupFromKeycloak = getGroupById(accessToken, groupId);
+            CreateGroupRequest create = updateGroupData(edit, groupFromKeycloak);
+            GroupDTO group = editRequestToGroupDTO(create, accessToken);
+
+            if (groupFromKeycloak.getGroupName() != null) {
+                group.setName(groupFromKeycloak.getGroupName());
+            }
+
+
+
+            HttpEntity<GroupDTO> entity = new HttpEntity<>(group, headers);
+            String url = createBaseUrl().pathSegment(groupId).toUriString();
+
+            try {
+                accessTokenResponse = restTemplate.exchange(url,
+                        HttpMethod.PUT,
+                        entity,
+                        AccessTokenResponse.class).getBody();
+            } catch (HttpClientErrorException.Conflict exception) {
+                throw new GroupAlreadyExistsException();
+            }
+        }
+        return accessTokenResponse;
+    }
+
+    private CreateGroupRequest updateGroupData(EditGroupRequest editRequest, GroupResponse groupResponse) {
+        CreateGroupRequest createGroupRequest = new CreateGroupRequest();
+
+        String groupName = editRequest.getGroupName() == null ? groupResponse.getGroupName() : editRequest.getGroupName();
+        int priority = editRequest.getPriority();
+        boolean softDeleted = editRequest.isSoftDeleted();
+
+        createGroupRequest.setGroupName(groupName);
+        createGroupRequest.setPriority(priority);
+        createGroupRequest.setUsers(groupResponse.getUsers());
+        createGroupRequest.setPolicies(groupResponse.getPolicies());
+        createGroupRequest.setGroupAdmin(groupResponse.getGroupAdmin());
+        createGroupRequest.setGroupAuditor(groupResponse.getGroupAuditor());
+
+        return createGroupRequest;
+    }
 
     public AccessTokenResponse deleteGroupById(String accessToken, DeleteGroupRequest deleteRequest) {
 
         AccessTokenResponse accessTokenResponse = new AccessTokenResponse();
         HttpHeaders headers = getAuthHeaders(accessToken);
-        HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(null, headers);
         for (String groupId : deleteRequest.getGroupIds()) {
+            String groupName = getGroupById(accessToken, groupId).getGroupName();
+            GroupDTO groupDTO =
+                    new GroupDTO()
+                            .setName(groupName)
+                            .setAttributes(new AttributeDTO().setSoftDeleted(List.of("true")));
             String url = createBaseUrl().pathSegment(groupId).toUriString();
+            HttpEntity<GroupDTO> entity = new HttpEntity<>(groupDTO, headers);
 
             accessTokenResponse = restTemplate.exchange(url,
-                    HttpMethod.DELETE,
+                    HttpMethod.PUT,
                     entity,
                     AccessTokenResponse.class).getBody();
         }
         return accessTokenResponse;
+    }
+
+    public List<User> getGroupMembersByGroupId(String accessToken, String groupId) {
+        HttpHeaders headers = getAuthHeaders(accessToken);
+        HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(null, headers);
+        String url = createBaseUrl().pathSegment(groupId).pathSegment(keyMembers).toUriString();
+
+        String stringResponse = restTemplate.exchange(url,
+                HttpMethod.GET,
+                entity,
+                String.class).getBody();
+        if (stringResponse == null) {
+            throw new FailedGetMembersException();
+        }
+        JSONArray membersResponse = new JSONArray(stringResponse);
+
+        return mapMembersToUserDTOList(membersResponse);
     }
 
     private PolicyDTO getRoleById(String roleId, String accessToken) {
@@ -454,45 +519,6 @@ public class GroupService {
         return roles;
     }
 
-//    private GroupDTO mapGroupToDTO(Group group) {
-//        GroupDTO groupDTO = new GroupDTO();
-//        Attribute attribute = new Attribute();
-//        if (group.getAttributes() != null) {
-//            attribute = group.getAttributes();
-//            groupDTO.setGroupAdmin(attribute.getGroupAdmin())
-//                    .setGroupAuditor(attribute.getGroupAuditor())
-//                    .setCreatedAt(attribute.getCreatedAt().get(0))
-//                    .setCreatedBy(attribute.getCreatedBy().get(0))
-//                    .setUpdatedAt(attribute.getUpdatedAt().get(0))
-//                    .setUpdatedBy(attribute.getUpdatedBy().get(0));
-//        }
-//
-//        return new GroupDTO()
-//                .setGroupId(group.getId())
-//                .setGroupName(group.getName())
-//                .setPriority(group.getAttributes().getPriority())
-//                .setPolicies(group.getAttributes().getPolicies())
-//                .setGroupAdmin(group.getAttributes().getGroupAdmin())
-//                .setGroupAuditor(group.getAttributes().getGroupAuditor())
-//                .setCreatedBy(group.getAttributes().getCreatedBy().get(0))
-//                .setCreatedAt(group.getAttributes().getCreatedAt().get(0))
-//                .setUpdatedAt(group.getAttributes().getUpdatedAt().get(0))
-//                .setUpdatedBy(group.getAttributes().getUpdatedBy().get(0))
-//                .setBlocked(group.getAttributes().isBlocked())
-//                .setSoftDeleted(group.getAttributes().isSoftDeleted());
-//    }
-
-//    private List<GroupDTO> mapResponseToListGroups(JSONArray groupsJson, String accessToken) {
-//        List<GroupDTO> groupDTOList = new ArrayList<>();
-//
-//        for (Object o : groupsJson) {
-//            Group group = mapResponseToGroup((JSONObject) o);
-//            groupDTOList.add(mapGroupToDTO(group).setUsers(getGroupMembersByGroupId(accessToken, group.getId())));
-//        }
-//
-//        return groupDTOList;
-//    }
-
     private List<User> mapMembersToUserDTOList(JSONArray membersJson) {
         List<User> userDTOList = new ArrayList<>();
         for (Object o : membersJson) {
@@ -521,43 +547,43 @@ public class GroupService {
         if (jsonObject.has(keyAttributes)) {
             attributesJson = (JSONObject) jsonObject.get(keyAttributes);
 
-                JSONArray arrayPolicies = attributesJson.getJSONArray("policies");
-                for (Object o : arrayPolicies) {
-                    policies.add((String) o);
-                }
-                groupAttribute.setPolicies(policies);
+            JSONArray arrayPolicies = attributesJson.getJSONArray("policies");
+            for (Object o : arrayPolicies) {
+                policies.add((String) o);
+            }
+            groupAttribute.setPolicies(policies);
 
-                JSONArray arrayGroupAdmin = attributesJson.getJSONArray("groupAdmin");
-                for (Object o : arrayGroupAdmin) {
-                    groupAdmin.add((String) o);
-                }
-                groupAttribute.setGroupAdmin(groupAdmin);
+            JSONArray arrayGroupAdmin = attributesJson.getJSONArray("groupAdmin");
+            for (Object o : arrayGroupAdmin) {
+                groupAdmin.add((String) o);
+            }
+            groupAttribute.setGroupAdmin(groupAdmin);
 
-                JSONArray arrayGroupAuditor = attributesJson.getJSONArray("groupAuditor");
-                for (Object o : arrayGroupAuditor) {
-                    groupAuditor.add((String) o);
-                }
-                groupAttribute.setGroupAuditor(groupAuditor);
+            JSONArray arrayGroupAuditor = attributesJson.getJSONArray("groupAuditor");
+            for (Object o : arrayGroupAuditor) {
+                groupAuditor.add((String) o);
+            }
+            groupAttribute.setGroupAuditor(groupAuditor);
 
-                JSONArray arrayCreatedBy = attributesJson.getJSONArray("createdBy");
-                groupAttribute.setCreatedBy(new UserDTO().setUserName(arrayCreatedBy.getString(0)));
+            JSONArray arrayCreatedBy = attributesJson.getJSONArray("createdBy");
+            groupAttribute.setCreatedBy(new UserDTO().setUserName(arrayCreatedBy.getString(0)));
 
-                JSONArray arrayCreatedAt = attributesJson.getJSONArray("createdAt");
+            JSONArray arrayCreatedAt = attributesJson.getJSONArray("createdAt");
 
-                    String date = arrayCreatedAt.getString(0);
-                    LocalDateTime createdAt =
-                            Instant.ofEpochMilli(Long.parseLong(date)).atZone(ZoneId.systemDefault()).toLocalDateTime();
+            String date = arrayCreatedAt.getString(0);
+            LocalDateTime createdAt =
+                    Instant.ofEpochMilli(Long.parseLong(date)).atZone(ZoneId.systemDefault()).toLocalDateTime();
 
-                groupAttribute.setCreatedAt(createdAt);
+            groupAttribute.setCreatedAt(createdAt);
 
-                JSONArray arrayBlocked = attributesJson.getJSONArray("blocked");
-                groupAttribute.setBlocked(arrayBlocked.getBoolean(0));
+            JSONArray arrayBlocked = attributesJson.getJSONArray("blocked");
+            groupAttribute.setBlocked(arrayBlocked.getBoolean(0));
 
-                JSONArray arraySoftDeleted = attributesJson.getJSONArray("softDeleted");
-                groupAttribute.setSoftDeleted(arraySoftDeleted.getBoolean(0));
+            JSONArray arraySoftDeleted = attributesJson.getJSONArray("softDeleted");
+            groupAttribute.setSoftDeleted(arraySoftDeleted.getBoolean(0));
 
-                JSONArray arrayPriority = attributesJson.getJSONArray("priority");
-                groupAttribute.setPriority(arrayPriority.getInt(0));
+            JSONArray arrayPriority = attributesJson.getJSONArray("priority");
+            groupAttribute.setPriority(arrayPriority.getInt(0));
 
         }
 

@@ -7,8 +7,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ru.maruchekas.keycloak.api.request.ChangeGroupStatusListRequest;
-import ru.maruchekas.keycloak.api.request.CreateGroupDataRequest;
+import ru.maruchekas.keycloak.api.request.CreateGroupListRequest;
 import ru.maruchekas.keycloak.api.request.DeleteGroupRequest;
+import ru.maruchekas.keycloak.api.request.EditGroupListRequest;
 import ru.maruchekas.keycloak.service.GroupService;
 import ru.maruchekas.keycloak.service.UserService;
 
@@ -45,7 +46,7 @@ public class GroupController {
     @PostMapping("add-group")
     @Operation(summary = "Метод создания новой группы")
     public ResponseEntity<?> postNewGroup(@RequestHeader("Authorization") String accessToken,
-                                          @RequestBody CreateGroupDataRequest createGroupRequest) {
+                                          @RequestBody CreateGroupListRequest createGroupRequest) {
         log.info("Попытка создания новой группы");
         return ResponseEntity.ok(groupService.createGroup(createGroupRequest, accessToken));
     }
@@ -59,14 +60,14 @@ public class GroupController {
 
     }
 
-//    @PutMapping("/edit-group")
-//    @Operation(summary = "Метод изменения группы по id")
-//    public ResponseEntity<?> updateGroupById(@RequestHeader("Authorization") String accessToken,
-//                                             @RequestBody CreateGroupData request) {
-//        log.info("Попытка изменения группы ");
-//        return ResponseEntity.ok(groupService.updateGroupById(accessToken, request));
-//
-//    }
+    @PutMapping("/edit-group")
+    @Operation(summary = "Метод изменения группы по id")
+    public ResponseEntity<?> updateGroupById(@RequestHeader("Authorization") String accessToken,
+                                             @RequestBody EditGroupListRequest request) {
+        log.info("Попытка изменения группы ");
+        return ResponseEntity.ok(groupService.updateGroup(accessToken, request));
+
+    }
 
     @GetMapping("/{id}/members")
     @Operation(summary = "Метод получения списка пользователей для группы")

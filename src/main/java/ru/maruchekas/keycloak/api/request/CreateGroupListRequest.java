@@ -1,4 +1,4 @@
-package ru.maruchekas.keycloak.api.response;
+package ru.maruchekas.keycloak.api.request;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -13,11 +13,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Accessors(chain = true)
-public class GroupListResponse {
+public class CreateGroupListRequest {
 
-    private int code;
-    List<GroupResponse> groups;
-    private int pageNumber;
-    private int pageSize;
-    private int pageTotal;
+    List<CreateGroupRequest> groups;
 }
