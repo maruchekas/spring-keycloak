@@ -16,14 +16,14 @@ import java.util.List;
 public class AttributeDTO {
 
     private List<String> priority;
-//    private List<String> groupAdmin;
+    private List<String> groupAdmin;
+    private List<String> groupAuditor;
     private List<String> createdAt;
     private List<String> createdBy;
     private List<String> blocked;
     private List<String> softDeleted;
+    private List<String> policies;
 
-//    private List<String> policies;
-//    private List<String> groupAuditor;
 //    private List<String> updatedAt;
 //    private List<String> updatedBy;
 

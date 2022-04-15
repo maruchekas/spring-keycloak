@@ -12,7 +12,6 @@ public class Group {
     private String id;
     private String name;
     private Attribute attributes;
-    private List<String> groupAdmin;
 
 }
 

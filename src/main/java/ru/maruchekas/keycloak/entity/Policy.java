@@ -1,5 +1,6 @@
 package ru.maruchekas.keycloak.entity;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 import lombok.experimental.Accessors;
 
@@ -15,6 +16,5 @@ public class Policy {
     private String containerId;
     private boolean composite;
     private boolean clientRole;
-    private Attribute attributes;
 
 }

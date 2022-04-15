@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import ru.maruchekas.keycloak.dto.PolicyDTO;
 import ru.maruchekas.keycloak.entity.GroupAdmin;
 import ru.maruchekas.keycloak.entity.GroupAuditor;
 import ru.maruchekas.keycloak.entity.Policy;
@@ -23,9 +24,10 @@ import java.util.List;
 public class GroupResponse {
 
     private Integer code;
+    private String groupId;
     private String groupName;
     private List<User> users;
-    private List<Policy> policies;
+    private List<PolicyDTO> policies;
     private List<GroupAdmin> groupAdmin;
     private List<GroupAuditor> groupAuditor;
     private int priority;

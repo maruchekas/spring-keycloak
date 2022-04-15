@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import ru.maruchekas.keycloak.dto.PolicyDTO;
 import ru.maruchekas.keycloak.entity.*;
 
 import java.util.List;
@@ -18,7 +19,7 @@ public class CreateGroupData {
 
     private String groupName;
     private List<User> users;
-    private List<Policy> policies;
+    private List<PolicyDTO> policies;
     private List<GroupAdmin> groupAdmin;
     private List<GroupAuditor> groupAuditor;
     private int priority;

@@ -33,14 +33,14 @@ public class GroupController {
 //
 //    }
 
-//    @PostMapping("/{group-id}")
-//    @Operation(summary = "Метод получения группы по id")
-//    public ResponseEntity<?> getGroupById(@RequestHeader("Authorization") String accessToken,
-//                                          @PathVariable("group-id") String groupId) {
-//        log.info("Попытка получения группы \"{}\"", groupId);
-//        return ResponseEntity.ok(groupService.getGroupById(accessToken, groupId));
-//
-//    }
+    @PostMapping("/{group-id}")
+    @Operation(summary = "Метод получения группы по id")
+    public ResponseEntity<?> getGroupById(@RequestHeader("Authorization") String accessToken,
+                                          @PathVariable("group-id") String groupId) {
+        log.info("Попытка получения группы \"{}\"", groupId);
+        return ResponseEntity.ok(groupService.getGroupById(accessToken, groupId));
+
+    }
 
     @PostMapping("add-group")
     @Operation(summary = "Метод создания новой группы")
@@ -96,12 +96,12 @@ public class GroupController {
         return ResponseEntity.ok(groupService.changeBlockStatusGroup(accessToken, changeGroupStatusRequest));
     }
 
-    @PostMapping("/{groupId}/role/{roleId}")
-    @Operation(summary = "Метод получения списка ролей для группы")
+    @DeleteMapping("/{groupId}/role/{roleId}")
+    @Operation(summary = "Метод добавления роли в группу")
     public ResponseEntity<?> addRoleToGroup(@RequestHeader("Authorization") String accessToken,
                                                @PathVariable String groupId,
                                                @PathVariable("roleId") String roleId){
-        return ResponseEntity.ok(groupService.addRoleToGroup(groupId, roleId, accessToken));
+        return ResponseEntity.ok(groupService.deleteRoleFromGroup(groupId, roleId, accessToken));
     }
 
 }

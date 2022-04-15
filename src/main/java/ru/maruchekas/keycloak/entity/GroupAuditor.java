@@ -7,7 +7,7 @@ import lombok.experimental.Accessors;
 @Accessors(chain = true)
 public class GroupAuditor {
 
-    private String groupAdminId;
-    private String groupAdminName;
+    private String groupAuditorId;
+    private String groupAuditorName;
 
 }

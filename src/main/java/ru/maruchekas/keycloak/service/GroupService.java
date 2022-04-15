@@ -24,10 +24,7 @@ import ru.maruchekas.keycloak.dto.AttributeDTO;
 import ru.maruchekas.keycloak.dto.GroupDTO;
 import ru.maruchekas.keycloak.dto.PolicyDTO;
 import ru.maruchekas.keycloak.dto.UserDTO;
-import ru.maruchekas.keycloak.entity.Attribute;
-import ru.maruchekas.keycloak.entity.Group;
-import ru.maruchekas.keycloak.entity.Policy;
-import ru.maruchekas.keycloak.entity.User;
+import ru.maruchekas.keycloak.entity.*;
 import ru.maruchekas.keycloak.exception.*;
 
 import java.time.LocalDateTime;
@@ -76,25 +73,24 @@ public class GroupService {
 //        return mapResponseToListGroups(groupArrayJson, accessToken);
 //    }
 
-//    public GroupDTO getGroupById(String accessToken, String id) {
-//        HttpHeaders headers = getAuthHeaders(accessToken);
-//        HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(null, headers);
-//        String url = createBaseUrl().pathSegment(id).toUriString();
-//
-//        ResponseEntity<String> stringResponse = restTemplate.exchange(url,
-//                HttpMethod.GET,
-//                entity,
-//                String.class);
-//
-//        if (stringResponse.getBody() == null) {
-//            throw new FailedGetListOfGroupsException();
-//        }
-//        JSONObject groupAsJson = new JSONObject(stringResponse.getBody());
+    public AccessTokenResponse getGroupById(String accessToken, String id) {
+        HttpHeaders headers = getAuthHeaders(accessToken);
+        HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(null, headers);
+        String url = createBaseUrl().pathSegment(id).toUriString();
+
+        AccessTokenResponse response = restTemplate.exchange(url,
+                HttpMethod.GET,
+                entity,
+                AccessTokenResponse.class).getBody();
+
+        if (response == null) {
+            throw new FailedGetListOfGroupsException();
+        }
+        JSONObject groupAsJson = new JSONObject(response);
 //        Group group = mapResponseToGroup(groupAsJson);
-//
-//        return mapGroupToDTO(group)
-//                .setUsers(getGroupMembersByGroupId(accessToken, id));
-//    }
+
+        return response;
+    }
 
     public List<UserDTO> getGroupMembersByGroupId(String accessToken, String id) {
         HttpHeaders headers = getAuthHeaders(accessToken);
@@ -138,9 +134,18 @@ public class GroupService {
                 userService.addUserToGroup(getGroupIgByName(accessToken, request.getGroupName()), user.getUserId(),
                         accessToken);
             }
+
+            for (PolicyDTO role : request.getPolicies()) {
+                addRoleToGroup(getGroupIgByName(accessToken, request.getGroupName()), role.getPolicyId(), accessToken);
+            }
+
             GroupResponse response = new GroupResponse()
-                    .setGroupName(getGroupIgByName(accessToken, request.getGroupName()))
+                    .setGroupId(getGroupIgByName(accessToken, request.getGroupName()))
+                    .setGroupName(request.getGroupName())
                     .setUsers(request.getUsers())
+                    .setPolicies(request.getPolicies())
+                    .setGroupAdmin(request.getGroupAdmin())
+                    .setGroupAuditor(request.getGroupAuditor())
                     .setCreatedBy(userService.getUserInfo(accessToken).getUserName())
                     .setCreatedAt(LocalDateTime.now());
             groups.add(response);
@@ -160,10 +165,33 @@ public class GroupService {
         List<String> createdAt = List.of(String.valueOf(currentTime));
         List<String> blocked = List.of(String.valueOf(false));
         List<String> softDeleted = List.of(String.valueOf(false));
+        List<String> groupAdmin = new ArrayList<>();
+        List<String> groupAuditor = new ArrayList<>();
+        List<String> policies = new ArrayList<>();
+
+        for (GroupAdmin admin : request.getGroupAdmin()) {
+            String strAdmin = admin.getGroupAdminId() + " : " + admin.getGroupAdminName();
+            groupAdmin.add(strAdmin);
+        }
+
+        for (GroupAuditor auditor : request.getGroupAuditor()) {
+            String strAuditor = auditor.getGroupAuditorId() + " : " + auditor.getGroupAuditorName();
+            groupAuditor.add(strAuditor);
+        }
+
+        if (request.getPolicies() != null) {
+            for (PolicyDTO p : request.getPolicies()) {
+                String policy = p.getPolicyId() + " : " + p.getPolicyName();
+                policies.add(policy);
+            }
+        }
 
         attribute.setPriority(priority)
                 .setCreatedBy(createdBy)
                 .setCreatedAt(createdAt)
+                .setPolicies(policies)
+                .setGroupAdmin(groupAdmin)
+                .setGroupAuditor(groupAuditor)
                 .setBlocked(blocked)
                 .setSoftDeleted(softDeleted);
 
@@ -253,10 +281,10 @@ public class GroupService {
                 .setPolicyName(roleJson.getString("name"));
     }
 
-    private List<String> getRolesForGroup(String accessToken, String id) {
+    private List<String> getRolesForGroup(String accessToken, String groupId) {
         HttpHeaders headers = getAuthHeaders(accessToken);
         HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(null, headers);
-        String url = createBaseUrl().pathSegment(id).pathSegment(keyRoleMapping).toUriString();
+        String url = createBaseUrl().pathSegment(groupId).pathSegment(keyRoleMapping).toUriString();
 
         String stringResponse = restTemplate.exchange(url,
                 HttpMethod.GET,
@@ -271,15 +299,15 @@ public class GroupService {
     public String addRoleToGroup(String groupId, String roleId, String accessToken) {
 
         PolicyDTO policyDTO = getRoleById(roleId, accessToken);
-        List<Policy> policies = List.of(new Policy()
+        List<Policy> roles = List.of(new Policy()
                 .setId(policyDTO.getPolicyId())
                 .setName(policyDTO.getPolicyName())
                 .setComposite(false)
                 .setClientRole(false)
-                .setContainerId(realm).setAttributes(new Attribute()));
+                .setContainerId(realm));
 
         HttpHeaders headers = getAuthHeaders(accessToken);
-        HttpEntity<List<Policy>> entity = new HttpEntity<>(policies, headers);
+        HttpEntity<List<Policy>> entity = new HttpEntity<>(roles, headers);
         String url = UriComponentsBuilder.fromHttpUrl(keyCloakUrl)
                 .pathSegment("admin")
                 .pathSegment("realms")
@@ -289,13 +317,39 @@ public class GroupService {
                 .pathSegment("role-mappings")
                 .pathSegment("realm").toUriString();
 
-        String stringResponse = restTemplate.exchange(url,
+
+        return restTemplate.exchange(url,
                 HttpMethod.POST,
                 entity,
                 String.class).getBody();
+    }
+
+    public String deleteRoleFromGroup(String groupId, String roleId, String accessToken) {
+
+        PolicyDTO policyDTO = getRoleById(roleId, accessToken);
+        List<Policy> roles = List.of(new Policy()
+                .setId(policyDTO.getPolicyId())
+                .setName(policyDTO.getPolicyName())
+                .setComposite(false)
+                .setClientRole(false)
+                .setContainerId(realm));
+
+        HttpHeaders headers = getAuthHeaders(accessToken);
+        HttpEntity<List<Policy>> entity = new HttpEntity<>(roles, headers);
+        String url = UriComponentsBuilder.fromHttpUrl(keyCloakUrl)
+                .pathSegment("admin")
+                .pathSegment("realms")
+                .pathSegment(realm)
+                .pathSegment("groups")
+                .pathSegment(groupId)
+                .pathSegment("role-mappings")
+                .pathSegment("realm").toUriString();
 
 
-        return stringResponse;
+        return restTemplate.exchange(url,
+                HttpMethod.DELETE,
+                entity,
+                String.class).getBody();
     }
 
     private String getGroupIgByName(String accessToken, String name) {
