@@ -25,13 +25,13 @@ public class GroupController {
     private final GroupService groupService;
     private final UserService userService;
 
-//    @GetMapping
-//    @Operation(summary = "Метод получения списка групп")
-//    public ResponseEntity<?> getAllGroups(@RequestHeader("Authorization") String accessToken) {
-//        log.info("Попытка получения списка групп");
-//        return ResponseEntity.ok(groupService.getAllGroups(accessToken));
-//
-//    }
+    @GetMapping
+    @Operation(summary = "Метод получения списка групп")
+    public ResponseEntity<?> getAllGroups(@RequestHeader("Authorization") String accessToken) {
+        log.info("Попытка получения списка групп");
+        return ResponseEntity.ok(groupService.getAllGroups(accessToken));
+
+    }
 
     @PostMapping("/{group-id}")
     @Operation(summary = "Метод получения группы по id")

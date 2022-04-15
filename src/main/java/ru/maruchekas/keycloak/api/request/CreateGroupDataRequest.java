@@ -15,5 +15,5 @@ import java.util.List;
 @Accessors(chain = true)
 public class CreateGroupDataRequest {
 
-    List<CreateGroupData> groups;
+    List<CreateGroupRequest> groups;
 }

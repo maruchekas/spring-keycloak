@@ -15,7 +15,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Accessors(chain = true)
-public class CreateGroupData {
+public class CreateGroupRequest {
 
     private String groupName;
     private List<User> users;

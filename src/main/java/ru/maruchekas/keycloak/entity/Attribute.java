@@ -5,7 +5,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import ru.maruchekas.keycloak.dto.UserDTO;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Setter
@@ -18,12 +20,12 @@ public class Attribute {
     private List<String> policies;
     private List<String> groupAdmin;
     private List<String> groupAuditor;
-    private List<String> createdAt;
-    private List<String> createdBy;
-    private List<String> updatedAt;
-    private List<String> updatedBy;
+    private LocalDateTime createdAt;
+    private UserDTO createdBy;
     private boolean blocked;
     private boolean softDeleted;
     private int priority;
 
+//    private LocalDateTime updatedAt;
+//    private UserDTO updatedBy;
 }

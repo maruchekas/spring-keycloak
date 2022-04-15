@@ -15,7 +15,9 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import ru.maruchekas.keycloak.dto.UserDTO;
+import ru.maruchekas.keycloak.entity.User;
 import ru.maruchekas.keycloak.exception.AuthenticationDataException;
+import ru.maruchekas.keycloak.exception.FailedGetMembersException;
 
 import java.net.http.HttpResponse;
 
@@ -47,6 +49,35 @@ public class UserService {
                 .toUriString();
 
         return restTemplate.exchange(url, HttpMethod.PUT, entity, AccessTokenResponse.class).getBody();
+    }
+
+    public User getUserById(String userId, String accessToken) {
+        HttpHeaders headers = getAuthHeaders(accessToken);
+        HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(null, headers);
+        String url = UriComponentsBuilder.fromHttpUrl(keyCloakUrl)
+                .pathSegment("admin")
+                .pathSegment("realms")
+                .pathSegment(realm)
+                .pathSegment("users")
+                .pathSegment(userId)
+                .toUriString();
+
+        String stringResponse = restTemplate.exchange(url, HttpMethod.GET, entity, String.class).getBody();
+        if (stringResponse == null) {
+            throw new FailedGetMembersException();
+        }
+        JSONObject jsonUser = new JSONObject(stringResponse);
+
+        return new User()
+                .setUserId(jsonUser.getString("id"))
+                .setUserName(jsonUser.getString("username"));
+    }
+
+    public UserDTO userToUserDTO(String userId, String accessToken) {
+        User user = getUserById(userId, accessToken);
+        return new UserDTO()
+                .setUserId(user.getUserId())
+                .setUserName(user.getUserName());
     }
 
     public UserDTO getUserInfo(String accessToken) {

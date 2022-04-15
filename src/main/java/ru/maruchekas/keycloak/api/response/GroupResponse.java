@@ -9,7 +9,6 @@ import lombok.experimental.Accessors;
 import ru.maruchekas.keycloak.dto.PolicyDTO;
 import ru.maruchekas.keycloak.entity.GroupAdmin;
 import ru.maruchekas.keycloak.entity.GroupAuditor;
-import ru.maruchekas.keycloak.entity.Policy;
 import ru.maruchekas.keycloak.entity.User;
 
 import java.time.LocalDateTime;
