@@ -74,6 +74,14 @@ public class GroupService {
                 .setPageTotal(groupResponseList.size());
     }
 
+    public CommonResponse editListGroup(EditGroupListRequest editRequest, String accessToken) {
+        for (EditGroupRequest request : editRequest.getGroups()) {
+            editGroup(request, accessToken);
+        }
+
+        return new CommonResponse().setCode(0);
+    }
+
     public GroupListResponse createGroup(CreateGroupListRequest createGroupRequest, String accessToken) {
 
         HttpHeaders headers = getAuthHeaders(accessToken);
@@ -113,14 +121,6 @@ public class GroupService {
                 .setPageTotal(groups.size());
     }
 
-    public CommonResponse editListGroup(EditGroupListRequest editRequest, String accessToken) {
-        for (EditGroupRequest request : editRequest.getGroups()) {
-            editGroup(request, accessToken);
-        }
-
-        return new CommonResponse().setCode(0);
-    }
-
     private void editGroup(EditGroupRequest editRequest, String accessToken) {
         HttpHeaders headers = getAuthHeaders(accessToken);
         String groupId = editRequest.getGroupId();
@@ -134,11 +134,11 @@ public class GroupService {
         if (editRequest.getPolicies() != null) {
             attributeDTO.setPolicies(editRequest.getPolicies());
         }
-        if (editRequest.getGroupAdminDTO() != null) {
-            attributeDTO.setGroupAdmin(editRequest.getGroupAdminDTO());
+        if (editRequest.getGroupAdmin() != null) {
+            attributeDTO.setGroupAdmin(editRequest.getGroupAdmin());
         }
-        if (editRequest.getGroupAuditorDTO() != null) {
-            attributeDTO.setGroupAuditor(editRequest.getGroupAuditorDTO());
+        if (editRequest.getGroupAuditor() != null) {
+            attributeDTO.setGroupAuditor(editRequest.getGroupAuditor());
         }
         if (editRequest.isSoftDeleted()) {
             attributeDTO.setSoftDeleted(true);
@@ -158,6 +158,13 @@ public class GroupService {
                 HttpMethod.PUT,
                 entity,
                 AccessTokenResponse.class).getBody();
+
+        if (editRequest.getUsers() != null) {
+            for (UserDTO user : editRequest.getUsers()) {
+                userService.addUserToGroup(getGroupIgByName(accessToken, editRequest.getGroupName()), user.getUserId(),
+                        accessToken);
+            }
+        }
 
         new CommonResponse().setCode(0);
     }
