@@ -19,8 +19,6 @@ import ru.maruchekas.keycloak.entity.User;
 import ru.maruchekas.keycloak.exception.AuthenticationDataException;
 import ru.maruchekas.keycloak.exception.FailedGetMembersException;
 
-import java.net.http.HttpResponse;
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -35,7 +33,7 @@ public class UserService {
 
     private final RestTemplate restTemplate;
 
-    public AccessTokenResponse addUserToGroup(String groupId, String userId, String accessToken){
+    public void addUserToGroup(String groupId, String userId, String accessToken){
         HttpHeaders headers = getAuthHeaders(accessToken);
         HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(null, headers);
         String url = UriComponentsBuilder.fromHttpUrl(keyCloakUrl)
@@ -48,7 +46,7 @@ public class UserService {
                 .pathSegment(groupId)
                 .toUriString();
 
-        return restTemplate.exchange(url, HttpMethod.PUT, entity, AccessTokenResponse.class).getBody();
+        restTemplate.exchange(url, HttpMethod.PUT, entity, AccessTokenResponse.class).getBody();
     }
 
     public User getUserById(String userId, String accessToken) {
