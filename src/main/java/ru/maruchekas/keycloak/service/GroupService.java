@@ -16,7 +16,6 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import ru.maruchekas.keycloak.api.request.*;
-import ru.maruchekas.keycloak.api.response.BlockStatusGroupResponse;
 import ru.maruchekas.keycloak.api.response.CommonResponse;
 import ru.maruchekas.keycloak.api.response.GroupListResponse;
 import ru.maruchekas.keycloak.api.response.GroupResponse;
@@ -32,6 +31,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 @Slf4j
@@ -113,39 +113,91 @@ public class GroupService {
                 .setPageTotal(groups.size());
     }
 
-    public CommonResponse editGroup(EditGroupListRequest editGroupsRequest, String accessToken) {
+    public CommonResponse editListGroup(EditGroupListRequest editRequest, String accessToken) {
+        for (EditGroupRequest request : editRequest.getGroups()) {
+            editGroup(request, accessToken);
+        }
 
-        return new CommonResponse();
+        return new CommonResponse().setCode(0);
     }
 
-    public AccessTokenResponse deleteGroupById(DeleteGroupRequest deleteRequest, String accessToken) {
+    private void editGroup(EditGroupRequest editRequest, String accessToken) {
+        HttpHeaders headers = getAuthHeaders(accessToken);
+        String groupId = editRequest.getGroupId();
 
-        AccessTokenResponse accessTokenResponse = new AccessTokenResponse();
+        GroupDTO groupDTO = getGroupDTOById(groupId, accessToken);
+        AttributeDTO attributeDTO = groupDTO.getAttributes();
+
+        if (editRequest.getGroupName() != null) {
+            groupDTO.setName(editRequest.getGroupName());
+        }
+        if (editRequest.getPolicies() != null) {
+            attributeDTO.setPolicies(editRequest.getPolicies());
+        }
+        if (editRequest.getGroupAdminDTO() != null) {
+            attributeDTO.setGroupAdmin(editRequest.getGroupAdminDTO());
+        }
+        if (editRequest.getGroupAuditorDTO() != null) {
+            attributeDTO.setGroupAuditor(editRequest.getGroupAuditorDTO());
+        }
+        if (editRequest.isSoftDeleted()) {
+            attributeDTO.setSoftDeleted(true);
+            groupDTO.setName(groupDTO.getName() + "_deleted_" + new Date().getTime());
+        }
+
+        attributeDTO.setPriority(editRequest.getPriority());
+        attributeDTO.setUpdatedAt(LocalDateTime.now());
+        attributeDTO.setUpdatedBy(userService.getUserInfo(accessToken));
+
+        Group group = mapGroupDtoToGroup(groupDTO);
+
+        String url = createBaseUrl().pathSegment(groupId).toUriString();
+        HttpEntity<Group> entity = new HttpEntity<>(group, headers);
+
+        restTemplate.exchange(url,
+                HttpMethod.PUT,
+                entity,
+                AccessTokenResponse.class).getBody();
+
+        new CommonResponse().setCode(0);
+    }
+
+    public CommonResponse deleteGroupById(DeleteGroupRequest deleteRequest, String accessToken) {
+
         HttpHeaders headers = getAuthHeaders(accessToken);
         for (String groupId : deleteRequest.getGroupIds()) {
             GroupDTO groupDTO = getGroupDTOById(groupId, accessToken);
             groupDTO.getAttributes().setSoftDeleted(true);
+            groupDTO.setName(groupDTO.getName() + "_deleted_" + new Date().getTime());
             Group group = mapGroupDtoToGroup(groupDTO);
 
             String url = createBaseUrl().pathSegment(groupId).toUriString();
             HttpEntity<Group> entity = new HttpEntity<>(group, headers);
 
-            accessTokenResponse = restTemplate.exchange(url,
+            restTemplate.exchange(url,
                     HttpMethod.PUT,
                     entity,
                     AccessTokenResponse.class).getBody();
         }
-        return accessTokenResponse;
+        return new CommonResponse().setCode(0);
     }
 
-    public BlockStatusGroupResponse changeBlockStatusGroup(String accessToken,
-                                                           ChangeGroupStatusListRequest changeGroupStatusRequest) {
-        List<Group> groups = new ArrayList<>();
-        /**
-         * TODO получить список групп из реквеста, поменять статусы(проверить возможность), заполнить ответ
-         */
+    public CommonResponse changeBlockStatusGroup(GroupStatusChangeRequest changeStatusRequest, String accessToken) {
+        HttpHeaders headers = getAuthHeaders(accessToken);
+        for (String groupId : changeStatusRequest.getGroupId()) {
+            GroupDTO groupDTO = getGroupDTOById(groupId, accessToken);
+            groupDTO.getAttributes().setBlocked(changeStatusRequest.isBlocked());
+            Group group = mapGroupDtoToGroup(groupDTO);
 
-        return new BlockStatusGroupResponse();
+            String url = createBaseUrl().pathSegment(groupId).toUriString();
+            HttpEntity<Group> entity = new HttpEntity<>(group, headers);
+
+            restTemplate.exchange(url,
+                    HttpMethod.PUT,
+                    entity,
+                    AccessTokenResponse.class).getBody();
+        }
+        return new CommonResponse().setCode(0);
     }
 
     public List<GroupDTO> findAllGroups(String accessToken) {
@@ -214,7 +266,7 @@ public class GroupService {
         return getGroupDTOFromJson(groupAsJson, accessToken);
     }
 
-    private GroupDTO mapCreateGroupRequestToGroupDTO(CreateGroupRequest request, UserDTO author){
+    private GroupDTO mapCreateGroupRequestToGroupDTO(CreateGroupRequest request, UserDTO author) {
         LocalDateTime currentDateTime = LocalDateTime.now();
         AttributeDTO attributeDTO = new AttributeDTO()
                 .setPriority(request.getPriority())

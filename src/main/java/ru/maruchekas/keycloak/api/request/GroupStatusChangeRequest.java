@@ -6,6 +6,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 
+import java.util.List;
+
 @Setter
 @Getter
 @AllArgsConstructor
@@ -13,6 +15,6 @@ import lombok.experimental.Accessors;
 @Accessors(chain = true)
 public class GroupStatusChangeRequest {
 
-    private String groupId;
-    private boolean groupStatus;
+    private List<String> groupId;
+    private boolean blocked;
 }

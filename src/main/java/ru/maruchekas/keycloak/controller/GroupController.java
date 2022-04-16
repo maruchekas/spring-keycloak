@@ -6,11 +6,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import ru.maruchekas.keycloak.api.request.CreateGroupListRequest;
-import ru.maruchekas.keycloak.api.request.DeleteGroupRequest;
-import ru.maruchekas.keycloak.api.request.FilterRequest;
+import ru.maruchekas.keycloak.api.request.*;
 import ru.maruchekas.keycloak.service.GroupService;
-import ru.maruchekas.keycloak.service.UserService;
 
 @Slf4j
 @Tag(name = "Контроллер для работы с группами")
@@ -20,7 +17,6 @@ import ru.maruchekas.keycloak.service.UserService;
 public class GroupController {
 
     private final GroupService groupService;
-    private final UserService userService;
 
     @GetMapping
     @Operation(summary = "Метод получения списка групп")
@@ -57,33 +53,29 @@ public class GroupController {
 
     }
 
-//    @PutMapping("/edit-group")
-//    @Operation(summary = "Метод изменения группы по id")
-//    public ResponseEntity<?> updateGroupById(@RequestHeader("Authorization") String accessToken,
-//                                             @RequestBody EditGroupListRequest request) {
-//        log.info("Попытка изменения группы ");
-//        return ResponseEntity.ok(groupService.updateGroup(accessToken, request));
-//
-//    }
+    @PutMapping("/edit-group")
+    @Operation(summary = "Метод изменения группы по id")
+    public ResponseEntity<?> editGroups(@RequestHeader("Authorization") String accessToken,
+                                        @RequestBody EditGroupListRequest request) {
+        log.info("Попытка изменения группы ");
+        return ResponseEntity.ok(groupService.editListGroup(request, accessToken));
 
-//    @PutMapping( "/block")
-//    @Operation(summary = "Метод блокировки группы или списка групп")
-//    public ResponseEntity<?> blockGroup(@RequestHeader("Authorization") String accessToken,
-//                                        @RequestBody ChangeGroupStatusListRequest changeGroupStatusRequest){
-//        List<String> ids = new ArrayList<>();
-//        changeGroupStatusRequest.getGroupStatusChangeRequestList().forEach(group -> ids.add(group.getGroupId()));
-//        log.info("Попытка блокировки групп(ы) {}", ids);
-//        return ResponseEntity.ok(groupService.changeBlockStatusGroup(accessToken, changeGroupStatusRequest));
-//    }
+    }
 
-//    @PutMapping( "/unblock")
-//    @Operation(summary = "Метод разблокировки группы или списка групп")
-//    public ResponseEntity<?> unblockGroup(@RequestHeader("Authorization") String accessToken,
-//                                        @RequestBody ChangeGroupStatusListRequest changeGroupStatusRequest){
-//        List<String> ids = new ArrayList<>();
-//        changeGroupStatusRequest.getGroupStatusChangeRequestList().forEach(group -> ids.add(group.getGroupId()));
-//        log.info("Попытка разблокировки групп(ы) {}", ids);
-//        return ResponseEntity.ok(groupService.changeBlockStatusGroup(accessToken, changeGroupStatusRequest));
-//    }
+    @PostMapping( "/block")
+    @Operation(summary = "Метод блокировки группы или списка групп")
+    public ResponseEntity<?> blockGroup(@RequestHeader("Authorization") String accessToken,
+                                        @RequestBody GroupStatusChangeRequest changeStatusRequest){
+        log.info("Попытка блокировки групп(ы)");
+        return ResponseEntity.ok(groupService.changeBlockStatusGroup(changeStatusRequest, accessToken));
+    }
+
+    @PostMapping( "/unblock")
+    @Operation(summary = "Метод разблокировки группы или списка групп")
+    public ResponseEntity<?> unblockGroup(@RequestHeader("Authorization") String accessToken,
+                                        @RequestBody GroupStatusChangeRequest changeStatusRequest){
+        log.info("Попытка разблокировки групп(ы)");
+        return ResponseEntity.ok(groupService.changeBlockStatusGroup(changeStatusRequest, accessToken));
+    }
 
 }
