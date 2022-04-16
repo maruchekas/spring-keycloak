@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Setter
@@ -17,15 +18,14 @@ import java.util.List;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class AttributeDTO {
 
-    private List<String> priority;
-    private List<String> groupAdmin;
-    private List<String> groupAuditor;
-    private List<String> blocked;
-    private List<String> softDeleted;
-    private List<String> policies;
-    private List<String> createdAt;
-    private List<String> createdBy;
-    private List<String> updatedAt;
-    private List<String> updatedBy;
-
+    private List<PolicyDTO> policies;
+    private List<GroupAdminDTO> groupAdmin;
+    private List<GroupAuditorDTO> groupAuditor;
+    private boolean blocked;
+    private boolean softDeleted;
+    private LocalDateTime createdAt;
+    private UserDTO createdBy;
+    private LocalDateTime updatedAt;
+    private UserDTO updatedBy;
+    private int priority;
 }

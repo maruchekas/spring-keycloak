@@ -6,87 +6,91 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.client.HttpClientErrorException;
-import ru.maruchekas.keycloak.api.response.BadResponse;
+import ru.maruchekas.keycloak.api.response.CommonResponse;
 import ru.maruchekas.keycloak.config.Constants;
 import ru.maruchekas.keycloak.exception.*;
+
+import java.util.UUID;
 
 @Slf4j
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
     @ExceptionHandler
-    ResponseEntity<BadResponse> handleInvalidTokenException(InvalidTokenException exception) {
-        BadResponse badDataResponse = new BadResponse().setError("token").setMessage(exception.getMessage());
+    ResponseEntity<CommonResponse> handleInvalidTokenException(InvalidTokenException exception) {
+        CommonResponse badDataResponse = new CommonResponse().setErrorUid("token").setErrorMessage(exception.getMessage());
         return new ResponseEntity<>(badDataResponse, HttpStatus.UNAUTHORIZED);
     }
 
     @ExceptionHandler
-    ResponseEntity<BadResponse> handleAuthenticationErrorException(AuthenticationDataException exception) {
-        BadResponse badDataResponse = new BadResponse().setError("authenticate").setMessage(exception.getMessage());
+    ResponseEntity<CommonResponse> handleAuthenticationErrorException(AuthenticationDataException exception) {
+        CommonResponse badDataResponse = new CommonResponse().setErrorUid("authenticate").setErrorMessage(exception.getMessage());
         return new ResponseEntity<>(badDataResponse, HttpStatus.UNAUTHORIZED);
     }
 
     @ExceptionHandler
-    ResponseEntity<BadResponse> handleInvalidClientException(HttpClientErrorException.Unauthorized exception) {
-        BadResponse badDataResponse = new BadResponse()
-                .setError("invalid client")
-                .setMessage(Constants.INVALID_CLIENT.getMessage());
+    ResponseEntity<CommonResponse> handleInvalidClientException(HttpClientErrorException.Unauthorized exception) {
+        CommonResponse badDataResponse = new CommonResponse()
+                .setCode(401)
+                .setErrorUid(UUID.randomUUID().toString())
+                .setErrorMessage(Constants.INVALID_ACCESS_TOKEN.getMessage());
         return new ResponseEntity<>(badDataResponse, HttpStatus.UNAUTHORIZED);
     }
 
     @ExceptionHandler
-    ResponseEntity<BadResponse> handleInvalidLoginPasswordException(HttpClientErrorException.Forbidden exception) {
-        BadResponse badDataResponse = new BadResponse()
-                .setError("access denied")
-                .setMessage(Constants.INVALID_LOGIN_PASSWORD.getMessage());
+    ResponseEntity<CommonResponse> handleInvalidLoginPasswordException(HttpClientErrorException.Forbidden exception) {
+        CommonResponse badDataResponse = new CommonResponse()
+                .setErrorUid("access denied")
+                .setErrorMessage(Constants.INVALID_LOGIN_PASSWORD.getMessage());
         return new ResponseEntity<>(badDataResponse, HttpStatus.UNAUTHORIZED);
     }
 
     @ExceptionHandler
-    ResponseEntity<BadResponse> handleElementNotFoundException(HttpClientErrorException.NotFound exception) {
-        BadResponse badDataResponse = new BadResponse()
-                .setError("not found")
-                .setMessage(Constants.ELEMENT_NOT_FOUND.getMessage());
+    ResponseEntity<CommonResponse> handleElementNotFoundException(HttpClientErrorException.NotFound exception) {
+        CommonResponse badDataResponse = new CommonResponse()
+                .setErrorUid("not found")
+                .setErrorMessage(Constants.ELEMENT_NOT_FOUND.getMessage());
         return new ResponseEntity<>(badDataResponse, HttpStatus.NOT_FOUND);
     }
 
     @ExceptionHandler
-    ResponseEntity<BadResponse> handleGroupAlreadyExistsException(GroupAlreadyExistsException exception) {
-        BadResponse badDataResponse = new BadResponse()
-                .setError("duplicate")
-                .setMessage(Constants.ELEMENT_ALREADY_EXISTS.getMessage());
+    ResponseEntity<CommonResponse> handleGroupAlreadyExistsException(GroupAlreadyExistsException exception) {
+        CommonResponse badDataResponse = new CommonResponse()
+                .setCode(400)
+                .setErrorUid(UUID.randomUUID().toString())
+                .setErrorMessage(Constants.ELEMENT_ALREADY_EXISTS.getMessage());
         return new ResponseEntity<>(badDataResponse, HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler
-    ResponseEntity<BadResponse> handleFailedGetListOfGroupsException(FailedGetListOfGroupsException exception) {
-        BadResponse badDataResponse = new BadResponse()
-                .setError("conflict")
-                .setMessage(Constants.FAILED_GET_GROUP_LIST.getMessage());
+    ResponseEntity<CommonResponse> handleFailedGetListOfGroupsException(FailedGetListOfGroupsException exception) {
+        CommonResponse badDataResponse = new CommonResponse()
+                .setErrorUid("conflict")
+                .setErrorMessage(Constants.FAILED_GET_GROUP_LIST.getMessage());
         return new ResponseEntity<>(badDataResponse, HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler
-    ResponseEntity<BadResponse> handleFailedGetGroupException(FailedGetGroupFromJsonException exception) {
-        BadResponse badDataResponse = new BadResponse()
-                .setError("getting_group")
-                .setMessage(Constants.FAILED_GET_GROUP.getMessage());
+    ResponseEntity<CommonResponse> handleFailedGetGroupException(FailedGetGroupFromJsonException exception) {
+        CommonResponse badDataResponse = new CommonResponse()
+                .setErrorUid("getting_group")
+                .setErrorMessage(Constants.FAILED_GET_GROUP.getMessage());
         return new ResponseEntity<>(badDataResponse, HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler
-    ResponseEntity<BadResponse> handleFailedGetMembersException(FailedGetMembersException exception) {
-        BadResponse badDataResponse = new BadResponse()
-                .setError("getting_members")
-                .setMessage(Constants.FAILED_GET_MEMBERS.getMessage());
+    ResponseEntity<CommonResponse> handleFailedGetMembersException(FailedGetMembersException exception) {
+        CommonResponse badDataResponse = new CommonResponse()
+                .setErrorUid("getting_members")
+                .setErrorMessage(Constants.FAILED_GET_MEMBERS.getMessage());
         return new ResponseEntity<>(badDataResponse, HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler
-    ResponseEntity<BadResponse> handleFailedCreateGroupException(FailedCreateGroupFromJsonException exception) {
-        BadResponse badDataResponse = new BadResponse()
-                .setError("creating_group")
-                .setMessage(Constants.FAILED_CREATE_GROUP.getMessage());
+    ResponseEntity<CommonResponse> handleFailedCreateGroupException(FailedCreateGroupFromJsonException exception) {
+        CommonResponse badDataResponse = new CommonResponse()
+                .setErrorUid("creating_group")
+                .setErrorMessage(Constants.FAILED_CREATE_GROUP.getMessage());
         return new ResponseEntity<>(badDataResponse, HttpStatus.BAD_REQUEST);
     }
 }

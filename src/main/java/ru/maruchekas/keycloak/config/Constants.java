@@ -10,6 +10,7 @@ import lombok.ToString;
 public enum Constants {
 
     INVALID_REFRESH_TOKEN("invalid or expired refresh token"),
+    INVALID_ACCESS_TOKEN("invalid or expired token"),
     INVALID_CLIENT("Invalid client credentials"),
     INVALID_LOGIN_PASSWORD("Invalid login or password"),
     AUTHENTICATION_ERROR("Authentication error"),

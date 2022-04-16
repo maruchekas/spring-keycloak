@@ -7,9 +7,9 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import ru.maruchekas.keycloak.dto.PolicyDTO;
-import ru.maruchekas.keycloak.entity.GroupAdmin;
-import ru.maruchekas.keycloak.entity.GroupAuditor;
-import ru.maruchekas.keycloak.entity.User;
+import ru.maruchekas.keycloak.dto.UserDTO;
+import ru.maruchekas.keycloak.dto.GroupAdminDTO;
+import ru.maruchekas.keycloak.dto.GroupAuditorDTO;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -25,14 +25,16 @@ public class GroupResponse {
     private Integer code;
     private String groupId;
     private String groupName;
-    private List<User> users;
+    private List<UserDTO> users;
     private List<PolicyDTO> policies;
-    private List<GroupAdmin> groupAdmin;
-    private List<GroupAuditor> groupAuditor;
+    private List<GroupAdminDTO> groupAdmin;
+    private List<GroupAuditorDTO> groupAuditor;
     private int priority;
     private boolean blocked;
     private boolean softDeleted;
     private LocalDateTime createdAt;
     private String createdBy;
+    private LocalDateTime updateAt;
+    private String updateBy;
 
 }

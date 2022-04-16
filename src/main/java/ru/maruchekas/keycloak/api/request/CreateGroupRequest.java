@@ -5,8 +5,10 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import ru.maruchekas.keycloak.dto.GroupAdminDTO;
+import ru.maruchekas.keycloak.dto.GroupAuditorDTO;
 import ru.maruchekas.keycloak.dto.PolicyDTO;
-import ru.maruchekas.keycloak.entity.*;
+import ru.maruchekas.keycloak.dto.UserDTO;
 
 import java.util.List;
 
@@ -19,9 +21,9 @@ public class CreateGroupRequest {
 
     private String groupId;
     private String groupName;
-    private List<User> users;
+    private List<UserDTO> users;
     private List<PolicyDTO> policies;
-    private List<GroupAdmin> groupAdmin;
-    private List<GroupAuditor> groupAuditor;
+    private List<GroupAdminDTO> groupAdmin;
+    private List<GroupAuditorDTO> groupAuditor;
     private int priority;
 }
