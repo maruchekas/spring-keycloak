@@ -19,7 +19,8 @@ public enum Constants {
     FAILED_GET_GROUP("Failed to get a group"),
     FAILED_GET_MEMBERS("Failed to get members"),
     FAILED_GET_GROUP_LIST("Failed to get a list of groups"),
-    FAILED_CREATE_GROUP("Failed to create a group");
+    FAILED_CREATE_GROUP("Failed to create a group. One or more fields are filled in incorrectly"),
+    CREATE_GROUP_ERR("22CG01ER");
 
     private final String message;
 

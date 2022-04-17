@@ -23,8 +23,8 @@ public class EditGroupRequest {
     private String groupName;
     private List<User> users;
     private List<PolicyDTO> policies;
-    private List<GroupAdminDTO> groupAdminDTO;
-    private List<GroupAuditorDTO> groupAuditorDTO;
+    private List<GroupAdminDTO> groupAdmin;
+    private List<GroupAuditorDTO> groupAuditor;
     private boolean softDeleted;
     private int priority;
 }

@@ -87,9 +87,10 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler
-    ResponseEntity<CommonResponse> handleFailedCreateGroupException(FailedCreateGroupFromJsonException exception) {
+    ResponseEntity<CommonResponse> handleFailedCreateGroupException(FailedCreateGroupException exception) {
         CommonResponse badDataResponse = new CommonResponse()
-                .setErrorUid("creating_group")
+                .setCode(400)
+                .setErrorUid(Constants.CREATE_GROUP_ERR.getMessage())
                 .setErrorMessage(Constants.FAILED_CREATE_GROUP.getMessage());
         return new ResponseEntity<>(badDataResponse, HttpStatus.BAD_REQUEST);
     }

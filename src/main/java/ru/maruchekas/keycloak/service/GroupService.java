@@ -2,6 +2,7 @@ package ru.maruchekas.keycloak.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.keycloak.representations.AccessTokenResponse;
@@ -22,6 +23,7 @@ import ru.maruchekas.keycloak.api.response.GroupResponse;
 import ru.maruchekas.keycloak.dto.*;
 import ru.maruchekas.keycloak.entity.Attribute;
 import ru.maruchekas.keycloak.entity.Group;
+import ru.maruchekas.keycloak.exception.FailedCreateGroupException;
 import ru.maruchekas.keycloak.exception.FailedGetListOfGroupsException;
 import ru.maruchekas.keycloak.exception.FailedGetMembersException;
 import ru.maruchekas.keycloak.exception.GroupAlreadyExistsException;
@@ -104,7 +106,8 @@ public class GroupService {
                 }
             }
 
-            GroupResponse response = groupDtoToResponse(groupDTO);
+            String groupId = getGroupIgByName(accessToken, request.getGroupName());
+            GroupResponse response = groupDtoToResponse(groupDTO).setGroupId(groupId);
             groups.add(response);
         }
 
@@ -134,11 +137,11 @@ public class GroupService {
         if (editRequest.getPolicies() != null) {
             attributeDTO.setPolicies(editRequest.getPolicies());
         }
-        if (editRequest.getGroupAdminDTO() != null) {
-            attributeDTO.setGroupAdmin(editRequest.getGroupAdminDTO());
+        if (editRequest.getGroupAdmin() != null) {
+            attributeDTO.setGroupAdmin(editRequest.getGroupAdmin());
         }
-        if (editRequest.getGroupAuditorDTO() != null) {
-            attributeDTO.setGroupAuditor(editRequest.getGroupAuditorDTO());
+        if (editRequest.getGroupAuditor() != null) {
+            attributeDTO.setGroupAuditor(editRequest.getGroupAuditor());
         }
         if (editRequest.isSoftDeleted()) {
             attributeDTO.setSoftDeleted(true);
@@ -268,6 +271,18 @@ public class GroupService {
 
     private GroupDTO mapCreateGroupRequestToGroupDTO(CreateGroupRequest request, UserDTO author) {
         LocalDateTime currentDateTime = LocalDateTime.now();
+
+        if (author == null
+                || request.getGroupName() == null
+                || StringUtils.isBlank(request.getGroupName())
+                || request.getGroupName().length() < 4
+                || request.getPriority() < 0
+                || request.getPolicies() == null
+                || request.getGroupAdmin() == null
+                || request.getGroupAuditor() == null) {
+            throw new FailedCreateGroupException();
+        }
+
         AttributeDTO attributeDTO = new AttributeDTO()
                 .setPriority(request.getPriority())
                 .setPolicies(request.getPolicies())
