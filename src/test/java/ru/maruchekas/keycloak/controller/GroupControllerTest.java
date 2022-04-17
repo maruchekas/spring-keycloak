@@ -210,6 +210,44 @@ public class GroupControllerTest extends AbstractTest {
 
     @Test
     @Order(70)
+    public void blockGroupByIdTest() throws Exception {
+
+        GroupStatusChangeRequest changeStatusRequest = new GroupStatusChangeRequest();
+        changeStatusRequest.setGroupId(List.of(groupId));
+        changeStatusRequest.setBlocked(true);
+
+        mockMvc.perform(MockMvcRequestBuilders
+                        .post("/api/groups/block")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", accessToken)
+                        .content(mapper.writeValueAsString(changeStatusRequest))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(MockMvcResultMatchers.status().isOk());
+
+    }
+
+    @Test
+    @Order(80)
+    public void unblockGroupByIdTest() throws Exception {
+
+        GroupStatusChangeRequest changeStatusRequest = new GroupStatusChangeRequest();
+        changeStatusRequest.setGroupId(List.of(groupId));
+        changeStatusRequest.setBlocked(false);
+
+        mockMvc.perform(MockMvcRequestBuilders
+                        .post("/api/groups/unblock")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", accessToken)
+                        .content(mapper.writeValueAsString(changeStatusRequest))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(MockMvcResultMatchers.status().isOk());
+
+    }
+
+    @Test
+    @Order(90)
     public void deleteGroupByIdTest() throws Exception {
 
         DeleteGroupRequest deleteRequest = new DeleteGroupRequest().setGroupIds(List.of(groupId));
@@ -222,6 +260,60 @@ public class GroupControllerTest extends AbstractTest {
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(MockMvcResultHandlers.print())
                 .andExpect(MockMvcResultMatchers.status().isOk());
+
+    }
+
+    @Test
+    @Order(100)
+    public void getDeletedGroupByIdTest() throws Exception {
+
+        mockMvc.perform(MockMvcRequestBuilders
+                        .post("/api/groups/{group-id}", groupId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", accessToken)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.errorMessage")
+                        .value(Constants.GROUP_NOT_FOUND.getMessage()))
+                .andExpect(MockMvcResultMatchers.status().isNotFound());
+
+    }
+
+    @Test
+    @Order(110)
+    public void blockDeletedGroupByIdTest() throws Exception {
+
+        GroupStatusChangeRequest changeStatusRequest = new GroupStatusChangeRequest();
+        changeStatusRequest.setGroupId(List.of(groupId));
+        changeStatusRequest.setBlocked(true);
+
+        mockMvc.perform(MockMvcRequestBuilders
+                        .post("/api/groups/block")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", accessToken)
+                        .content(mapper.writeValueAsString(changeStatusRequest))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.errorMessage")
+                        .value(Constants.GROUP_NOT_FOUND.getMessage()))
+                .andExpect(MockMvcResultMatchers.status().isNotFound());
+
+    }
+
+    @Test
+    @Order(120)
+    public void updateDeletedGroupByIdTest() throws Exception {
+
+        mockMvc.perform(MockMvcRequestBuilders
+                        .put("/api/groups/edit-group")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", accessToken)
+                        .content(mapper.writeValueAsString(editGroupListRequest))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.errorMessage")
+                        .value(Constants.GROUP_NOT_FOUND.getMessage()))
+                .andExpect(MockMvcResultMatchers.status().isNotFound());
 
     }
 

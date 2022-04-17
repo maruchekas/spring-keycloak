@@ -23,10 +23,7 @@ import ru.maruchekas.keycloak.api.response.GroupResponse;
 import ru.maruchekas.keycloak.dto.*;
 import ru.maruchekas.keycloak.entity.Attribute;
 import ru.maruchekas.keycloak.entity.Group;
-import ru.maruchekas.keycloak.exception.FailedCreateGroupException;
-import ru.maruchekas.keycloak.exception.FailedGetListOfGroupsException;
-import ru.maruchekas.keycloak.exception.FailedGetMembersException;
-import ru.maruchekas.keycloak.exception.GroupAlreadyExistsException;
+import ru.maruchekas.keycloak.exception.*;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -51,12 +48,16 @@ public class GroupService {
     private final String keyAttributes = "attributes";
     private final String keyEmail = "email";
     private final String keyMembers = "members";
+    private final String deleteStatus = "_deleted_" + new Date().getTime();
 
     private final RestTemplate restTemplate;
     private final UserService userService;
 
     public GroupResponse getGroupById(String groupId, String accessToken) {
         GroupDTO groupDTO = getGroupDTOById(groupId, accessToken);
+        if (groupDTO.getAttributes().isSoftDeleted()) {
+            throw new GroupNotFoundException();
+        }
 
         return groupDtoToResponse(groupDTO).setCode(0);
     }
@@ -129,6 +130,9 @@ public class GroupService {
         String groupId = editRequest.getGroupId();
 
         GroupDTO groupDTO = getGroupDTOById(groupId, accessToken);
+        if (groupDTO.getAttributes().isSoftDeleted()) {
+            throw new GroupNotFoundException();
+        }
         AttributeDTO attributeDTO = groupDTO.getAttributes();
 
         if (editRequest.getGroupId() == null || editRequest.getPriority() < 0) {
@@ -149,7 +153,7 @@ public class GroupService {
         }
         if (editRequest.isSoftDeleted()) {
             attributeDTO.setSoftDeleted(true);
-            groupDTO.setName(groupDTO.getName() + "_deleted_" + new Date().getTime());
+            groupDTO.setName(groupDTO.getName() + deleteStatus);
         }
 
         attributeDTO.setPriority(editRequest.getPriority());
@@ -182,7 +186,7 @@ public class GroupService {
         for (String groupId : deleteRequest.getGroupIds()) {
             GroupDTO groupDTO = getGroupDTOById(groupId, accessToken);
             groupDTO.getAttributes().setSoftDeleted(true);
-            groupDTO.setName(groupDTO.getName() + "_deleted_" + new Date().getTime());
+            groupDTO.setName(groupDTO.getName() + deleteStatus);
             Group group = mapGroupDtoToGroup(groupDTO);
 
             String url = createBaseUrl().pathSegment(groupId).toUriString();
@@ -200,6 +204,11 @@ public class GroupService {
         HttpHeaders headers = getAuthHeaders(accessToken);
         for (String groupId : changeStatusRequest.getGroupId()) {
             GroupDTO groupDTO = getGroupDTOById(groupId, accessToken);
+
+            if (groupDTO.getAttributes().isSoftDeleted()) {
+                throw new GroupNotFoundException();
+            }
+
             groupDTO.getAttributes().setBlocked(changeStatusRequest.isBlocked());
             Group group = mapGroupDtoToGroup(groupDTO);
 

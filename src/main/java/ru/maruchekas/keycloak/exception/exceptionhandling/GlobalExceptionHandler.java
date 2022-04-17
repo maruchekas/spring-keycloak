@@ -18,13 +18,19 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler
     ResponseEntity<CommonResponse> handleInvalidTokenException(InvalidTokenException exception) {
-        CommonResponse badDataResponse = new CommonResponse().setErrorUid("token").setErrorMessage(exception.getMessage());
+        CommonResponse badDataResponse = new CommonResponse()
+                .setCode(401)
+                .setErrorUid(Constants.INVALID_ACCESS_TOKEN.getMessage())
+                .setErrorMessage(exception.getMessage());
         return new ResponseEntity<>(badDataResponse, HttpStatus.UNAUTHORIZED);
     }
 
     @ExceptionHandler
     ResponseEntity<CommonResponse> handleAuthenticationErrorException(AuthenticationDataException exception) {
-        CommonResponse badDataResponse = new CommonResponse().setErrorUid("authenticate").setErrorMessage(exception.getMessage());
+        CommonResponse badDataResponse = new CommonResponse()
+                .setCode(401)
+                .setErrorUid(Constants.AUTHENTICATION_ERROR.getMessage())
+                .setErrorMessage(exception.getMessage());
         return new ResponseEntity<>(badDataResponse, HttpStatus.UNAUTHORIZED);
     }
 
@@ -32,7 +38,7 @@ public class GlobalExceptionHandler {
     ResponseEntity<CommonResponse> handleInvalidClientException(HttpClientErrorException.Unauthorized exception) {
         CommonResponse badDataResponse = new CommonResponse()
                 .setCode(401)
-                .setErrorUid(Constants.ACC_TOKEN_ER.getMessage())
+                .setErrorUid(Constants.ACC_TOKEN_ERR.getMessage())
                 .setErrorMessage(Constants.INVALID_ACCESS_TOKEN.getMessage());
         return new ResponseEntity<>(badDataResponse, HttpStatus.UNAUTHORIZED);
     }
@@ -40,7 +46,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler
     ResponseEntity<CommonResponse> handleInvalidLoginPasswordException(HttpClientErrorException.Forbidden exception) {
         CommonResponse badDataResponse = new CommonResponse()
-                .setErrorUid("access denied")
+                .setCode(401)
+                .setErrorUid(Constants.AUTHENTICATE_ERR.getMessage())
                 .setErrorMessage(Constants.INVALID_LOGIN_PASSWORD.getMessage());
         return new ResponseEntity<>(badDataResponse, HttpStatus.UNAUTHORIZED);
     }
@@ -55,10 +62,19 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler
+    ResponseEntity<CommonResponse> handleGroupNotFoundException(GroupNotFoundException exception) {
+        CommonResponse badDataResponse = new CommonResponse()
+                .setCode(404)
+                .setErrorUid(Constants.NOT_FOUND_ERR.getMessage())
+                .setErrorMessage(Constants.GROUP_NOT_FOUND.getMessage());
+        return new ResponseEntity<>(badDataResponse, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler
     ResponseEntity<CommonResponse> handleGroupAlreadyExistsException(GroupAlreadyExistsException exception) {
         CommonResponse badDataResponse = new CommonResponse()
                 .setCode(400)
-                .setErrorUid(UUID.randomUUID().toString())
+                .setErrorUid(Constants.ALREADY_EXISTS_ERR.getMessage())
                 .setErrorMessage(Constants.ELEMENT_ALREADY_EXISTS.getMessage());
         return new ResponseEntity<>(badDataResponse, HttpStatus.BAD_REQUEST);
     }
@@ -84,9 +100,10 @@ public class GlobalExceptionHandler {
     @ExceptionHandler
     ResponseEntity<CommonResponse> handleFailedGetMembersException(FailedGetMembersException exception) {
         CommonResponse badDataResponse = new CommonResponse()
-                .setErrorUid("getting_members")
-                .setErrorMessage(Constants.FAILED_GET_MEMBERS.getMessage());
-        return new ResponseEntity<>(badDataResponse, HttpStatus.BAD_REQUEST);
+                .setCode(404)
+                .setErrorUid(Constants.GET_USER_ERR.getMessage())
+                .setErrorMessage(Constants.FAILED_GET_USER.getMessage());
+        return new ResponseEntity<>(badDataResponse, HttpStatus.NOT_FOUND);
     }
 
     @ExceptionHandler
