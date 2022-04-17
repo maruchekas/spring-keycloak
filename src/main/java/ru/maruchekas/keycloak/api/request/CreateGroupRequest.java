@@ -20,6 +20,7 @@ import java.util.List;
 public class CreateGroupRequest {
 
     private String groupId;
+
     private String groupName;
     private List<UserDTO> users;
     private List<PolicyDTO> policies;

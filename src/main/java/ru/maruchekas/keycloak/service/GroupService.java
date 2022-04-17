@@ -2,6 +2,7 @@ package ru.maruchekas.keycloak.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.keycloak.representations.AccessTokenResponse;
@@ -22,6 +23,7 @@ import ru.maruchekas.keycloak.api.response.GroupResponse;
 import ru.maruchekas.keycloak.dto.*;
 import ru.maruchekas.keycloak.entity.Attribute;
 import ru.maruchekas.keycloak.entity.Group;
+import ru.maruchekas.keycloak.exception.FailedCreateGroupException;
 import ru.maruchekas.keycloak.exception.FailedGetListOfGroupsException;
 import ru.maruchekas.keycloak.exception.FailedGetMembersException;
 import ru.maruchekas.keycloak.exception.GroupAlreadyExistsException;
@@ -74,14 +76,6 @@ public class GroupService {
                 .setPageTotal(groupResponseList.size());
     }
 
-    public CommonResponse editListGroup(EditGroupListRequest editRequest, String accessToken) {
-        for (EditGroupRequest request : editRequest.getGroups()) {
-            editGroup(request, accessToken);
-        }
-
-        return new CommonResponse().setCode(0);
-    }
-
     public GroupListResponse createGroup(CreateGroupListRequest createGroupRequest, String accessToken) {
 
         HttpHeaders headers = getAuthHeaders(accessToken);
@@ -122,12 +116,24 @@ public class GroupService {
                 .setPageTotal(groups.size());
     }
 
+    public CommonResponse editListGroup(EditGroupListRequest editRequest, String accessToken) {
+        for (EditGroupRequest request : editRequest.getGroups()) {
+            editGroup(request, accessToken);
+        }
+
+        return new CommonResponse().setCode(0);
+    }
+
     private void editGroup(EditGroupRequest editRequest, String accessToken) {
         HttpHeaders headers = getAuthHeaders(accessToken);
         String groupId = editRequest.getGroupId();
 
         GroupDTO groupDTO = getGroupDTOById(groupId, accessToken);
         AttributeDTO attributeDTO = groupDTO.getAttributes();
+
+        if (editRequest.getGroupId() == null || editRequest.getPriority() < 0) {
+            throw new FailedCreateGroupException();
+        }
 
         if (editRequest.getGroupName() != null) {
             groupDTO.setName(editRequest.getGroupName());
@@ -276,6 +282,18 @@ public class GroupService {
 
     private GroupDTO mapCreateGroupRequestToGroupDTO(CreateGroupRequest request, UserDTO author) {
         LocalDateTime currentDateTime = LocalDateTime.now();
+
+        if (author == null
+                || request.getGroupName() == null
+                || StringUtils.isBlank(request.getGroupName())
+                || request.getGroupName().length() < 4
+                || request.getPriority() < 0
+                || request.getPolicies() == null
+                || request.getGroupAdmin() == null
+                || request.getGroupAuditor() == null) {
+            throw new FailedCreateGroupException();
+        }
+
         AttributeDTO attributeDTO = new AttributeDTO()
                 .setPriority(request.getPriority())
                 .setPolicies(request.getPolicies())

@@ -89,9 +89,9 @@ public class AuthControllerTest extends AbstractTest {
                         .content(mapper.writeValueAsString(authRequest))
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(MockMvcResultHandlers.print())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.message")
-                        .value(Constants.INVALID_LOGIN_PASSWORD.getMessage()))
-                .andExpect(MockMvcResultMatchers.status().isForbidden());
+                .andExpect(MockMvcResultMatchers.jsonPath("$.errorMessage")
+                        .value(Constants.INVALID_ACCESS_TOKEN.getMessage()))
+                .andExpect(MockMvcResultMatchers.status().isUnauthorized());
     }
 
     @Test
@@ -129,9 +129,9 @@ public class AuthControllerTest extends AbstractTest {
                         .content(mapper.writeValueAsString(invalidToken))
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(MockMvcResultHandlers.print())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.message")
+                .andExpect(MockMvcResultMatchers.jsonPath("$.errorMessage")
                         .value(Constants.INVALID_REFRESH_TOKEN.getMessage()))
-                .andExpect(MockMvcResultMatchers.status().isBadRequest());
+                .andExpect(MockMvcResultMatchers.status().isUnauthorized());
     }
 
     @Test
@@ -145,9 +145,9 @@ public class AuthControllerTest extends AbstractTest {
                         .content(mapper.writeValueAsString(invalidToken))
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(MockMvcResultHandlers.print())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.message")
+                .andExpect(MockMvcResultMatchers.jsonPath("$.errorMessage")
                         .value(Constants.INVALID_REFRESH_TOKEN.getMessage()))
-                .andExpect(MockMvcResultMatchers.status().isBadRequest());
+                .andExpect(MockMvcResultMatchers.status().isUnauthorized());
     }
 
 }

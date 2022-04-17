@@ -18,7 +18,7 @@ public class GroupController {
 
     private final GroupService groupService;
 
-    @GetMapping
+    @PostMapping
     @Operation(summary = "Метод получения списка групп")
     public ResponseEntity<?> getFilteredGroups(@RequestHeader("Authorization") String accessToken,
                                                @RequestBody FilterRequest filter) {
@@ -37,7 +37,7 @@ public class GroupController {
     }
 
     @PostMapping("add-group")
-    @Operation(summary = "Метод создания новой группы")
+    @Operation(summary = "Метод создания новой группы или списка групп")
     public ResponseEntity<?> postNewGroup(@RequestHeader("Authorization") String accessToken,
                                           @RequestBody CreateGroupListRequest createGroupRequest) {
         log.info("Попытка создания новой группы");
@@ -45,7 +45,7 @@ public class GroupController {
     }
 
     @DeleteMapping("")
-    @Operation(summary = "Метод удаления группы по id")
+    @Operation(summary = "Метод удаления группы или списка групп")
     public ResponseEntity<?> deleteGroupById(@RequestHeader("Authorization") String accessToken,
                                              @RequestBody DeleteGroupRequest deleteRequest) {
         log.info("Попытка удаления группы");
@@ -54,7 +54,7 @@ public class GroupController {
     }
 
     @PutMapping("/edit-group")
-    @Operation(summary = "Метод изменения группы по id")
+    @Operation(summary = "Метод изменения группы или списка групп")
     public ResponseEntity<?> editGroups(@RequestHeader("Authorization") String accessToken,
                                         @RequestBody EditGroupListRequest request) {
         log.info("Попытка изменения группы ");
