@@ -32,7 +32,7 @@ public class GlobalExceptionHandler {
     ResponseEntity<CommonResponse> handleInvalidClientException(HttpClientErrorException.Unauthorized exception) {
         CommonResponse badDataResponse = new CommonResponse()
                 .setCode(401)
-                .setErrorUid(UUID.randomUUID().toString())
+                .setErrorUid(Constants.ACC_TOKEN_ER.getMessage())
                 .setErrorMessage(Constants.INVALID_ACCESS_TOKEN.getMessage());
         return new ResponseEntity<>(badDataResponse, HttpStatus.UNAUTHORIZED);
     }
@@ -48,7 +48,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler
     ResponseEntity<CommonResponse> handleElementNotFoundException(HttpClientErrorException.NotFound exception) {
         CommonResponse badDataResponse = new CommonResponse()
-                .setErrorUid("not found")
+                .setCode(404)
+                .setErrorUid(Constants.NOT_FOUND_ERR.getMessage())
                 .setErrorMessage(Constants.ELEMENT_NOT_FOUND.getMessage());
         return new ResponseEntity<>(badDataResponse, HttpStatus.NOT_FOUND);
     }
@@ -65,7 +66,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler
     ResponseEntity<CommonResponse> handleFailedGetListOfGroupsException(FailedGetListOfGroupsException exception) {
         CommonResponse badDataResponse = new CommonResponse()
-                .setErrorUid("conflict")
+                .setCode(400)
+                .setErrorUid(Constants.GET_GROUP_ERR.getMessage())
                 .setErrorMessage(Constants.FAILED_GET_GROUP_LIST.getMessage());
         return new ResponseEntity<>(badDataResponse, HttpStatus.BAD_REQUEST);
     }
@@ -73,7 +75,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler
     ResponseEntity<CommonResponse> handleFailedGetGroupException(FailedGetGroupFromJsonException exception) {
         CommonResponse badDataResponse = new CommonResponse()
-                .setErrorUid("getting_group")
+                .setCode(400)
+                .setErrorUid(Constants.GET_GROUP_ERR.getMessage())
                 .setErrorMessage(Constants.FAILED_GET_GROUP.getMessage());
         return new ResponseEntity<>(badDataResponse, HttpStatus.BAD_REQUEST);
     }

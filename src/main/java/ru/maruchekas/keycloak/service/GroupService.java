@@ -131,6 +131,10 @@ public class GroupService {
         GroupDTO groupDTO = getGroupDTOById(groupId, accessToken);
         AttributeDTO attributeDTO = groupDTO.getAttributes();
 
+        if (editRequest.getGroupId() == null || editRequest.getPriority() < 0) {
+            throw new FailedCreateGroupException();
+        }
+
         if (editRequest.getGroupName() != null) {
             groupDTO.setName(editRequest.getGroupName());
         }

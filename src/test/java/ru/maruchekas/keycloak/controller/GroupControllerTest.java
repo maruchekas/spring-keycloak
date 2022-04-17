@@ -37,13 +37,15 @@ public class GroupControllerTest extends AbstractTest {
     private String clientId;
     private final CreateGroupListRequest createGroupListRequest = new CreateGroupListRequest();
     private final CreateGroupRequest createGroupRequest = new CreateGroupRequest();
+    private final EditGroupListRequest editGroupListRequest = new EditGroupListRequest();
+    private final EditGroupRequest editGroupRequest = new EditGroupRequest();
     private String groupName;
     private List<UserDTO> users;
     private List<PolicyDTO> policies;
     private List<GroupAdminDTO> groupAdmin;
     private List<GroupAuditorDTO> groupAuditor;
     private int priority;
-    private String groupId;
+    private static String groupId;
 
     @BeforeEach
     public void setupData() throws Exception {
@@ -63,7 +65,7 @@ public class GroupControllerTest extends AbstractTest {
                 .setGroupAdminName("testuser"));
         groupAuditor = List.of(new GroupAuditorDTO()
                 .setGroupAuditorId("a871cda0-64ee-45bb-b94e-4f2f128ee632")
-                .setGroupAuditorId("testuser"));
+                .setGroupAuditorName("testuser"));
         priority = 22;
 
         createGroupRequest
@@ -74,6 +76,15 @@ public class GroupControllerTest extends AbstractTest {
                 .setGroupAdmin(groupAdmin)
                 .setGroupAuditor(groupAuditor);
         createGroupListRequest.setGroups(List.of(createGroupRequest));
+
+        editGroupRequest
+                .setGroupId(groupId)
+                .setGroupName(groupName + "_updated")
+                .setPolicies(policies)
+                .setGroupAdmin(groupAdmin)
+                .setGroupAuditor(groupAuditor)
+                .setPriority(33);
+        editGroupListRequest.setGroups(List.of(editGroupRequest));
 
         getAccessToken();
     }
@@ -157,7 +168,7 @@ public class GroupControllerTest extends AbstractTest {
     public void getGroupByIdTest() throws Exception {
 
         mockMvc.perform(MockMvcRequestBuilders
-                        .post("/api/groups/{group-id}", "62fef7bd-050f-412a-9e4a-92b9d2c6cd34")
+                        .post("/api/groups/{group-id}", groupId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", accessToken)
                         .accept(MediaType.APPLICATION_JSON))
@@ -185,15 +196,6 @@ public class GroupControllerTest extends AbstractTest {
     @Test
     @Order(60)
     public void updateGroupByIdTest() throws Exception {
-        EditGroupListRequest editGroupListRequest = new EditGroupListRequest();
-        EditGroupRequest editGroupRequest = new EditGroupRequest()
-                .setGroupId(groupId)
-                .setGroupName(groupName + "_updated")
-                .setPolicies(policies)
-                .setGroupAdmin(groupAdmin)
-                .setGroupAuditor(groupAuditor)
-                .setPriority(33);
-        editGroupListRequest.setGroups(List.of(editGroupRequest));
 
         mockMvc.perform(MockMvcRequestBuilders
                         .put("/api/groups/edit-group")
@@ -208,20 +210,6 @@ public class GroupControllerTest extends AbstractTest {
 
     @Test
     @Order(70)
-    public void getRolesTest() throws Exception {
-
-        mockMvc.perform(MockMvcRequestBuilders
-                        .get("/api/groups/{id}/roles", groupId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .header("Authorization", accessToken)
-                        .accept(MediaType.APPLICATION_JSON))
-                .andDo(MockMvcResultHandlers.print())
-                .andExpect(MockMvcResultMatchers.status().isOk());
-
-    }
-
-    @Test
-    @Order(80)
     public void deleteGroupByIdTest() throws Exception {
 
         DeleteGroupRequest deleteRequest = new DeleteGroupRequest().setGroupIds(List.of(groupId));
@@ -239,14 +227,13 @@ public class GroupControllerTest extends AbstractTest {
 
     @Test
     public void updateNotExistedGroupByIdTest() throws Exception {
-
-        CreateGroupRequest createGroupRequest = new CreateGroupRequest();
+        editGroupListRequest.getGroups().get(0).setGroupId("not-such-group-id-91ae56d7e7b5");
 
         mockMvc.perform(MockMvcRequestBuilders
-                        .put("/api/groups/{id}", groupId)
+                        .put("/api/groups/edit-group")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", accessToken)
-                        .content(mapper.writeValueAsString(createGroupRequest))
+                        .content(mapper.writeValueAsString(editGroupListRequest))
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(MockMvcResultHandlers.print())
                 .andExpect(MockMvcResultMatchers.jsonPath("$.errorMessage")
@@ -258,7 +245,8 @@ public class GroupControllerTest extends AbstractTest {
     @Test
     public void deleteNotExistedGroupByIdTest() throws Exception {
 
-        DeleteGroupRequest deleteRequest = new DeleteGroupRequest().setGroupIds(List.of(groupId));
+        DeleteGroupRequest deleteRequest = new DeleteGroupRequest()
+                .setGroupIds(List.of("not-such-group-id-91ae56d7e7b5"));
 
         mockMvc.perform(MockMvcRequestBuilders
                         .delete("/api/groups")
@@ -277,11 +265,13 @@ public class GroupControllerTest extends AbstractTest {
     public void getAllGroupsWhenNotAuthorizedTest() throws Exception {
 
         String invalidAccessToken = accessToken + "a";
+        FilterRequest filter = new FilterRequest();
 
         mockMvc.perform(MockMvcRequestBuilders
                         .post("/api/groups")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", invalidAccessToken)
+                        .content(mapper.writeValueAsString(filter))
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(MockMvcResultHandlers.print())
                 .andExpect(MockMvcResultMatchers.jsonPath("$.errorMessage")
